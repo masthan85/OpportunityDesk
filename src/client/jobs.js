@@ -1,5 +1,39 @@
 const careerViews=['Available jobs','Jobs applied','Career profile'];
 let jobResults=null, jobFetch=null, failedBoards=[];
+const jobCountryLabels = new Map(Object.values(zoneCountries).map(code => [code, display.of(code)]));
+const jobCountryAliases = new Map([...jobCountryLabels].map(([code, name]) => [name.toLowerCase(), code]));
+for (const [alias, code] of Object.entries({
+  uk: 'GB', 'u.k.': 'GB', britain: 'GB', 'great britain': 'GB',
+  england: 'GB', scotland: 'GB', wales: 'GB', 'northern ireland': 'GB',
+  london: 'GB', edinburgh: 'GB', manchester: 'GB',
+  us: 'US', usa: 'US', 'u.s.': 'US', 'united states of america': 'US',
+  'washington d.c.': 'US', 'washington, d.c.': 'US',
+  bengaluru: 'IN', bangalore: 'IN', mumbai: 'IN', hyderabad: 'IN',
+  pune: 'IN', chennai: 'IN', gurugram: 'IN', 'new delhi': 'IN',
+  uae: 'AE', 'czech republic': 'CZ',
+})) jobCountryAliases.set(alias, code);
+const usStates = new Set('Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming'.toLowerCase().split('|'));
+
+let jobCountry = '';
+function initialiseJobCountry(saved, hint) {
+  const selected = saved.find(r => r.kind === 'preference' && r.id === 'jobs-country')?.data.title;
+  const detected = jobCountryLabels.has(hint) ? hint : zoneCountries[Intl.DateTimeFormat().resolvedOptions().timeZone];
+  jobCountry = selected === 'All' || jobCountryLabels.has(selected) ? selected : detected || '';
+}
+
+function jobCountries(location) {
+  const codes = new Set();
+  for (const place of location.toLowerCase().split(';')) {
+    const label = place.trim().replace(/^(?:remote|home based|office based)\s*[-–,:]?\s*/, '');
+    const last = label.split(',').at(-1).trim().replace(/^remote\s*[-–:]\s*/, '');
+    const directional = last.replace(/^(?:central|east coast|west coast|southeast|northeast|southwest|northwest)\s*[-–]\s*/, '');
+    const code = label.includes('tbilisi') ? 'GE' :
+      usStates.has(last) ? 'US' : jobCountryAliases.get(label) || jobCountryAliases.get(directional);
+    if (code) codes.add(code);
+  }
+  return codes;
+}
+
 function careerProfile(){return entries.find(r=>r.kind==='preference'&&r.id==='career-profile')}
 function jobApplications(){return entries.filter(r=>r.kind==='job')}
 async function saveCareerRecord(record){
@@ -11,22 +45,43 @@ function renderCareer(){
  const profile=careerProfile(), data=profile?.data||{};
  const head='<section class="intro"><h1>'+esc(page)+'</h1></section>';
  if(page==='Career profile'){
-  $('view').innerHTML=head+'<form id="career-form" class="panel card"><p>Enter comma-separated job titles or skills to match against vacancy titles and departments. Locations match the employer’s wording.</p>'+field('keywords','Job titles or skills',data.keywords||'','text',true)+field('locations','Preferred locations',data.locations||'','text',true)+'<button class="primary">Save profile</button></form>';
+  $('view').innerHTML=head+'<form id="career-form" class="panel card"><p>Enter comma-separated job titles or skills to match against vacancy titles and departments. Preferred locations rank matches within the country you select.</p>'+field('keywords','Job titles or skills',data.keywords||'','text',true)+field('locations','Preferred locations',data.locations||'','text',true)+'<button class="primary">Save profile</button></form>';
   $('career-form').onsubmit=async e=>{e.preventDefault();const f=e.target;f.querySelector('button').disabled=true;try{await saveCareerRecord({id:'career-profile',kind:'preference',revision:profile?.revision||0,data:{title:'Career profile',...Object.fromEntries(new FormData(f))}});navigate('Available jobs')}catch(err){notify(err.message)}finally{f.querySelector('button').disabled=false}};return;
  }
  if(page==='Jobs applied'){
   const apps=jobApplications().sort((a,b)=>b.data.applied.localeCompare(a.data.applied));
   $('view').innerHTML=head+'<div class="cards">'+(apps.map(r=>'<article class="card"><h2>'+esc(r.data.title)+'</h2><p>'+esc(r.data.employer)+' · '+esc(r.data.location)+'</p><p>Applied '+date(r.data.applied)+'</p><label class="field">Application status<select data-job-status="'+esc(r.id)+'">'+options(['Applied','Interviewing','Offer received','Rejected','Withdrawn'],r.data.status)+'</select></label><a target="_blank" rel="noopener" href="'+esc(safeUrl(r.data.url))+'">Employer listing ↗</a></article>').join('')||'<p class="empty">Applications appear here when you select Mark as applied on a vacancy.</p>')+'</div>';return;
  }
- $('view').innerHTML=head+'<div class="filters"><button class="secondary" data-page="Career profile">Edit career profile</button><button class="secondary" id="refresh-jobs">Refresh vacancies</button></div><p class="result-count" id="job-summary"></p><div class="cards" id="job-list"></div>';
+ const countries = [...jobCountryLabels].sort((a,b)=>a[1].localeCompare(b[1]));
+ const countryOptions = [['','Choose a country'],['All','All countries'],...countries].map(([code,label]) =>
+   '<option value="'+esc(code)+'"'+(code===jobCountry?' selected':'')+'>'+esc(label)+'</option>').join('');
+ $('view').innerHTML=head+'<div class="filters"><label>Job country<select id="jobs-country">'+countryOptions+'</select></label><button class="secondary" data-page="Career profile">Edit career profile</button><button class="secondary" id="refresh-jobs">Refresh vacancies</button></div><p class="result-count" id="job-summary" aria-live="polite"></p><div class="cards" id="job-list"></div>';
+ $('jobs-country').onchange=async e=>{
+   const selected=e.target.value;
+   if(!selected){jobCountry='';renderCareer();return}
+   e.target.disabled=true;
+   const existing=entries.find(r=>r.id==='jobs-country');
+   try{
+     await saveCareerRecord({id:'jobs-country',kind:'preference',revision:existing?.revision||0,data:{title:selected}});
+     jobCountry=selected;
+   }catch(err){notify(err.message)}
+   if(page==='Available jobs')renderCareer();
+ };
+ if(!jobCountry){$('job-summary').textContent='Choose a country to see vacancies.';return}
  $('refresh-jobs').onclick=()=>{jobResults=null;renderCareer()};
  if(!jobResults){$('job-summary').textContent='Checking employer job boards…';$('refresh-jobs').disabled=true;
  if(!jobFetch)jobFetch=fetch('/api/jobs').then(async r=>{if(!r.ok)throw Error();const body=await r.json();jobResults=body.jobs;failedBoards=body.failed}).catch(()=>{jobResults=[];failedBoards=['Employer feeds']}).finally(()=>{jobFetch=null;if(page==='Available jobs')renderCareer()});return}
  const terms=v=>(v||'').toLowerCase().split(',').map(t=>t.trim()).filter(Boolean);
  const keywords=terms(data.keywords),locations=terms(data.locations);
- const jobs=jobResults.map(j=>({...j,matched:keywords.filter(k=>(j.title+' '+j.department).toLowerCase().includes(k))})).filter(j=>(!keywords.length||j.matched.length)&&(!locations.length||locations.some(l=>j.location.toLowerCase().includes(l)))).sort((a,b)=>b.matched.length-a.matched.length||a.title.localeCompare(b.title));
- $('job-summary').textContent=jobs.length+' matching vacancies'+(failedBoards.length?' · Unavailable feeds: '+failedBoards.join(', '):'')+(!keywords.length&&!locations.length?' · Add your profile to personalise results.':'');
- $('job-list').innerHTML=jobs.map(j=>'<article class="card"><h2>'+esc(j.title)+'</h2><p>'+esc(j.employer)+' · '+esc(j.location)+'</p>'+(j.matched.length?'<p>Matches '+esc(j.matched.join(', '))+'</p>':'')+'<div class="actions"><a class="secondary" target="_blank" rel="noopener" href="'+esc(safeUrl(j.url))+'">Apply with employer ↗</a>'+(entries.some(r=>r.id===j.id)?'<button class="quiet" data-page="Jobs applied">View application</button>':'<button class="quiet" data-job-apply="'+esc(j.id)+'">Mark as applied</button>')+'</div></article>').join('')||'<p class="empty">Try changing your profile or refreshing the employer feeds.</p>';
+ const jobs=jobResults
+   .filter(job=>jobCountry==='All'||jobCountries(job.location).has(jobCountry))
+   .map(j=>({...j,matched:keywords.filter(k=>(j.title+' '+j.department).toLowerCase().includes(k))}))
+   .filter(j=>!keywords.length||j.matched.length)
+   .sort((a,b)=>b.matched.length-a.matched.length||
+     Number(locations.some(l=>b.location.toLowerCase().includes(l)))-Number(locations.some(l=>a.location.toLowerCase().includes(l)))||
+     a.title.localeCompare(b.title));
+ $('job-summary').textContent=jobs.length+' matching vacancies · '+(jobCountryLabels.get(jobCountry)||'All countries')+(failedBoards.length?' · Unavailable feeds: '+failedBoards.join(', '):'')+(!keywords.length&&!locations.length?' · Add your profile to personalise results.':'');
+ $('job-list').innerHTML=jobs.map(j=>'<article class="card"><h2>'+esc(j.title)+'</h2><p>'+esc(j.employer)+' · '+esc(j.location)+'</p>'+(j.matched.length?'<p>Matches '+esc(j.matched.join(', '))+'</p>':'')+'<div class="actions"><a class="secondary" target="_blank" rel="noopener" href="'+esc(safeUrl(j.url))+'">Apply with employer ↗</a>'+(entries.some(r=>r.id===j.id)?'<button class="quiet" data-page="Jobs applied">View application</button>':'<button class="quiet" data-job-apply="'+esc(j.id)+'">Mark as applied</button>')+'</div></article>').join('')||'<p class="empty">Try another country, edit your profile or refresh the employer feeds.</p>';
 }
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-job-apply]');if(!b)return;const job=jobResults.find(j=>j.id===b.dataset.jobApply);if(!job)return;b.disabled=true;try{await saveCareerRecord({id:job.id,kind:'job',revision:0,data:{...job,status:'Applied',applied:londonToday()}});renderCareer();notify('Application recorded')}catch(err){notify(err.message);b.disabled=false}});
 document.addEventListener('change',async e=>{const id=e.target.dataset.jobStatus;if(!id)return;const r=entries.find(v=>v.id===id);const input=e.target;input.disabled=true;try{await saveCareerRecord({...r,data:{...r.data,status:input.value}});notify('Status updated')}catch(err){input.value=r.data.status;notify(err.message)}finally{input.disabled=false}});

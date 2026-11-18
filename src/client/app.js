@@ -56,6 +56,7 @@ async function load(){
     const {saved, ownerDefault, countryHint}=await response.json();
     if(ownerDefault && !defaults.some(r=>r.id===ownerDefault.id))defaults.push(ownerDefault);
     initialiseCountry(saved,countryHint);
+    initialiseJobCountry(saved,countryHint);
     const ids=new Set(saved.map(r=>r.id));
     entries=[...saved,...defaults.filter(r=>!ids.has(r.id))];
     ready=true;$('add').disabled=false;render();
