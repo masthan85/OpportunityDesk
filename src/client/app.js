@@ -69,6 +69,7 @@ async function load(){
 function navigate(target){page=target;query='';stage='';topic='';sort='Event date';render();window.scrollTo(0,0)}
 function render(){
   $('navigation').innerHTML=groups.map(([label,items])=>`<div class="nav-label">${label}</div>`+items.map(([name,i])=>`<button class="nav ${page===name?'active':''}" ${page===name?'aria-current="page"':''} data-page="${name}">${icon(i)}${name}</button>`).join('')).join('');
+  $('view-picker').value=page;
   $('crumb').textContent=page;
   if(!ready)return;
   $('view').setAttribute('aria-busy','false');
@@ -89,7 +90,7 @@ function render(){
   <label><span class="sr-only">Application status</span><select id="stage"><option value="">All statuses</option>${options(['Decision pending',...(page==='Upcoming conferences'?['Untracked']:[]),...statuses],stage)}</select></label>
   <label><span class="sr-only">Topic fit</span><select id="topic"><option value="">All topics</option>${options(topics,topic)}</select></label>
   <label><span class="sr-only">Sort opportunities</span><select id="sort">${options(['Event date','Deadline','Follow-up date','Name'],sort)}</select></label></div>
-  <div class="table-scroll"><table><thead><tr><th scope="col">Opportunity</th><th scope="col">Event date / venue</th><th scope="col">Deadline</th><th scope="col">Status</th><th scope="col">Source</th></tr></thead><tbody id="rows"></tbody></table></div><div id="count" class="result-count" aria-live="polite"></div></section>${page==='Overview'?`<div class="topics" aria-label="Priority topics">${topics.map(t=>`<button class="topic" data-topic="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}`;
+  <div class="table-scroll"><table role="table" aria-label="Opportunity records"><thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Opportunity</th><th role="columnheader" scope="col">Event date / venue</th><th role="columnheader" scope="col">Deadline</th><th role="columnheader" scope="col">Status</th><th role="columnheader" scope="col">Source</th></tr></thead><tbody role="rowgroup" id="rows"></tbody></table></div><div id="count" class="result-count" aria-live="polite"></div></section>${page==='Overview'?`<div class="topics" aria-label="Priority topics">${topics.map(t=>`<button class="topic" data-topic="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}`;
   $('search').oninput=e=>{query=e.target.value;renderRows()};
   for(const [id,update] of [['stage',v=>stage=v],['topic',v=>topic=v],['sort',v=>sort=v]]) $(id).onchange=e=>{update(e.target.value);renderRows()};
   renderRows();
@@ -111,8 +112,8 @@ function renderRows(){
     const d=r.data, url=safeUrl(d.source);
     const event=d.start ? date(d.start)+(d.end?' to '+date(d.end):'') : 'To be confirmed';
     const closed=d.deadline&&d.deadline<londonToday();
-    return `<tr><td><button class="entry-title" data-edit="${esc(r.id)}">${esc(d.title)}</button><small>${esc([d.organisation,d.category].filter(Boolean).join(' · '))}</small></td><td>${event}<small>${esc(d.venue)}</small></td><td>${date(d.deadline)||'—'}${closed?'<small>Passed</small>':''}</td><td>${badge(d.status)}</td><td>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Official ↗</a>`:'—'}</td></tr>`;
-  }).join('')||'<tr><td colspan="5" class="empty">No matching opportunities. Adjust the filters or add a record.</td></tr>';
+    return `<tr role="row"><td role="cell" class="record-title"><button class="entry-title" data-edit="${esc(r.id)}">${esc(d.title)}</button><small>${esc([d.organisation,d.category].filter(Boolean).join(' · '))}</small></td><td role="cell"><span class="record-label" aria-hidden="true">Event date / venue</span>${event}<small>${esc(d.venue)}</small></td><td role="cell"><span class="record-label" aria-hidden="true">Deadline</span>${date(d.deadline)||'—'}${closed?'<small>Passed</small>':''}</td><td role="cell"><span class="record-label" aria-hidden="true">Status</span>${badge(d.status)}</td><td role="cell"><span class="record-label" aria-hidden="true">Source</span>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Official ↗</a>`:'—'}</td></tr>`;
+  }).join('')||'<tr role="row"><td role="cell" colspan="5" class="empty">No matching opportunities. Adjust the filters or add a record.</td></tr>';
   $('count').textContent=rows.length+' '+(rows.length===1?'opportunity':'opportunities');
 }
 function renderTemplates(){
@@ -195,5 +196,10 @@ document.addEventListener('click',async e=>{
     try{await navigator.clipboard.writeText(body);notify('Template copied')}catch{notify('Clipboard unavailable. Open Edit to select and copy the text.')}
   }
 });
+const viewPicker = $('view-picker');
+viewPicker.innerHTML=groups.map(([label,items])=>
+  `<optgroup label="${esc(label)}">${items.map(([name])=>`<option>${esc(name)}</option>`).join('')}</optgroup>`
+).join('');
+viewPicker.addEventListener('change',()=>navigate(viewPicker.value));
 render();
 load();
