@@ -1,0 +1,6 @@
+CREATE TABLE entries (
+  id TEXT PRIMARY KEY NOT NULL,
+  kind TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  revision INTEGER NOT NULL DEFAULT 1
+);
