@@ -9,6 +9,11 @@ export default {
       return new Response(assets[url.pathname], {headers:{'Cache-Control':'private, no-store','Content-Type': assetTypes[url.pathname]+'; charset=utf-8'}});
     }
     if(url.pathname==='/api/jobs')return !visitor?json({error:'Sign in required'},401):request.method==='GET'?employerJobs():json({error:'Method unavailable'},405);
+    if (url.pathname.startsWith('/api/jobs/')) {
+      if (!visitor) return json({error:'Sign in required'},401);
+      if (request.method !== 'GET') return json({error:'Method unavailable'},405);
+      return employerJobDescription(url.pathname);
+    }
     if (url.pathname !== '/api/entries') return new Response('Not found', {status:404});
     return handleEntries(request, env, visitor, url.origin);
   }

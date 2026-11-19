@@ -12,6 +12,7 @@ const assets = {
     'src/client/app.js',
     'src/client/discovery.js',
     'src/client/jobs.js',
+    'src/client/interview.js',
   ]),
 };
 

@@ -11,3 +11,21 @@ async function employerJobs(){
  }));
  return json({jobs:lists.flat(),failed});
 }
+
+async function employerJobDescription(path) {
+  const match = /^\/api\/jobs\/job-(databricks|gitlab|canonical)-(\d{1,18})$/.exec(path);
+  if (!match) return json({error:'Unknown job'},404);
+  const [, board, id] = match;
+  try {
+    const response = await fetch('https://boards-api.greenhouse.io/v1/boards/'+board+'/jobs/'+id, {
+      signal:AbortSignal.timeout(9000),
+      cf:{cacheTtl:300,cacheEverything:true},
+    });
+    if (response.status === 404) return json({error:'The employer listing is no longer available'},404);
+    if (!response.ok) throw Error('Employer feed unavailable');
+    const {content} = await response.json();
+    return json({description:typeof content === 'string' ? content.slice(0,42000) : ''});
+  } catch {
+    return json({error:'The employer description is temporarily unavailable'},502);
+  }
+}
