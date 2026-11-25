@@ -1,20 +1,6 @@
 const careerViews=['Available jobs','Jobs applied','Career profile'];
 const jobEmployers='Databricks, GitLab and Canonical';
 let jobResults=null, jobFetch=null, failedBoards=[];
-const jobCountryLabels = new Map(Object.values(zoneCountries).map(code => [code, display.of(code)]));
-const jobCountryAliases = new Map([...jobCountryLabels].map(([code, name]) => [name.toLowerCase(), code]));
-for (const [alias, code] of Object.entries({
-  uk: 'GB', 'u.k.': 'GB', britain: 'GB', 'great britain': 'GB',
-  england: 'GB', scotland: 'GB', wales: 'GB', 'northern ireland': 'GB',
-  london: 'GB', edinburgh: 'GB', manchester: 'GB',
-  us: 'US', usa: 'US', 'u.s.': 'US', 'united states of america': 'US',
-  'washington d.c.': 'US', 'washington, d.c.': 'US',
-  bengaluru: 'IN', bangalore: 'IN', mumbai: 'IN', hyderabad: 'IN',
-  pune: 'IN', chennai: 'IN', gurugram: 'IN', 'new delhi': 'IN',
-  uae: 'AE', 'czech republic': 'CZ',
-})) jobCountryAliases.set(alias, code);
-const usStates = new Set('Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming'.toLowerCase().split('|'));
-
 let jobCountry = '';
 function initialiseJobCountry(saved, hint) {
   const selected = saved.find(r => r.kind === 'preference' && r.id === 'jobs-country')?.data.title;
@@ -22,25 +8,33 @@ function initialiseJobCountry(saved, hint) {
   jobCountry = selected === 'All' || jobCountryLabels.has(selected) ? selected : detected || '';
 }
 
-function jobCountries(location) {
-  const codes = new Set();
-  for (const place of location.toLowerCase().split(';')) {
-    const label = place.trim().replace(/^(?:remote|home based|office based)\s*[-–,:]?\s*/, '');
-    const last = label.split(',').at(-1).trim().replace(/^remote\s*[-–:]\s*/, '');
-    const directional = last.replace(/^(?:central|east coast|west coast|southeast|northeast|southwest|northwest)\s*[-–]\s*/, '');
-    const code = label.includes('tbilisi') ? 'GE' :
-      usStates.has(last) ? 'US' : jobCountryAliases.get(label) || jobCountryAliases.get(directional);
-    if (code) codes.add(code);
-  }
-  return codes;
-}
 
-// A profile term matches when every word in it starts a word in the vacancy, in any order,
-// so "test engineer" matches "Software Engineer in Test" and "Engineering Manager, Testing".
-const roleWords=text=>text.toLowerCase().replace(/\bquality assurance\b/g,'qa').replace(/\bsdet\b/g,'sdet qa test engineer').split(/[^a-z0-9+#]+/).filter(Boolean);
-function roleMatches(term,text){
-  const words=roleWords(text);
-  return roleWords(term).every(part=>words.some(word=>word.startsWith(part)));
+
+// Lets visitors use their own Claude or ChatGPT with this workspace through the MCP connector.
+function connectorPanel(){
+ return '<section class="panel card connector"><h2>Use Opportunity Desk from your AI assistant</h2>'+
+  '<p>Connect Claude or ChatGPT to this workspace and ask it to find vacancies, prepare you for interviews and update your tracker. It works with the free Claude plan, which allows one custom connector.</p>'+
+  '<ol><li>Copy the connector address below.</li><li>In Claude, open Customize, then Connectors, select Add and choose Add custom connector. In ChatGPT, add it as an app in developer mode where your plan offers it.</li><li>Paste the address, then sign in with ChatGPT and allow access when asked.</li></ol>'+
+  '<p class="connector-url"><code id="connector-url">'+esc(location.origin+'/mcp')+'</code></p>'+
+  '<div class="actions"><button class="secondary" type="button" id="copy-connector">Copy address</button><button class="quiet" type="button" id="disconnect-ai" hidden>Disconnect all AI apps</button></div>'+
+  '<p class="result-count" id="connected-apps" aria-live="polite">Checking connected apps…</p></section>';
+}
+async function wireConnectorPanel(){
+ $('copy-connector').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+'/mcp');notify('Connector address copied')}catch{notify('Select the address and copy it.')}};
+ const show=apps=>{
+  if(!$('connected-apps'))return;
+  $('connected-apps').textContent=apps.length?'Connected: '+apps.join(', ')+'.':'No AI apps are connected.';
+  $('disconnect-ai').hidden=!apps.length;
+ };
+ $('disconnect-ai').onclick=async e=>{
+  e.target.disabled=true;
+  try{
+   const res=await fetch('/api/connections',{method:'DELETE',headers:{'Content-Type':'application/json'}});
+   if(!res.ok)throw Error();show((await res.json()).apps);notify('AI apps disconnected');
+  }catch{notify('Could not disconnect. Try again.')}finally{e.target.disabled=false}
+ };
+ try{const res=await fetch('/api/connections');if(!res.ok)throw Error();show((await res.json()).apps)}
+ catch{if($('connected-apps'))$('connected-apps').textContent='Connected apps could not be loaded.'}
 }
 
 function careerProfile(){return entries.find(r=>r.kind==='preference'&&r.id==='career-profile')}
@@ -54,12 +48,12 @@ function renderCareer(){
  const profile=careerProfile(), data=profile?.data||{};
  const head='<section class="intro"><h1>'+esc(page)+'</h1></section>';
  if(page==='Career profile'){
-  $('view').innerHTML=head+'<form id="career-form" class="panel card"><p>Vacancies come from the '+jobEmployers+' job boards. Enter comma-separated job titles or skills to match against vacancy titles and departments. Preferred locations rank matches within the country you select.</p>'+field('keywords','Job titles or skills',data.keywords||'','text',true)+field('locations','Preferred locations',data.locations||'','text',true)+field('experience','Relevant experience for interview prep',data.experience||'','textarea',true)+'<button class="primary">Save profile</button></form>';
-  $('career-form').onsubmit=async e=>{e.preventDefault();const f=e.target;f.querySelector('button').disabled=true;try{await saveCareerRecord({id:'career-profile',kind:'preference',revision:profile?.revision||0,data:{title:'Career profile',...Object.fromEntries(new FormData(f))}});navigate('Available jobs')}catch(err){notify(err.message)}finally{f.querySelector('button').disabled=false}};return;
+  $('view').innerHTML=head+'<form id="career-form" class="panel card"><p>Vacancies come from the '+jobEmployers+' job boards. Enter comma-separated job titles or skills to match against vacancy titles and departments. Preferred locations rank matches within the country you select.</p>'+field('keywords','Job titles or skills',data.keywords||'','text',true)+field('locations','Preferred locations',data.locations||'','text',true)+field('experience','Relevant experience for interview prep',data.experience||'','textarea',true)+'<button class="primary">Save profile</button></form>'+connectorPanel();
+  $('career-form').onsubmit=async e=>{e.preventDefault();const f=e.target;f.querySelector('button').disabled=true;try{await saveCareerRecord({id:'career-profile',kind:'preference',revision:profile?.revision||0,data:{title:'Career profile',...Object.fromEntries(new FormData(f))}});navigate('Available jobs')}catch(err){notify(err.message)}finally{f.querySelector('button').disabled=false}};wireConnectorPanel();return;
  }
  if(page==='Jobs applied'){
   const apps=jobApplications().sort((a,b)=>b.data.applied.localeCompare(a.data.applied));
-  $('view').innerHTML=head+'<div class="cards">'+(apps.map(r=>'<article class="card"><h2>'+esc(r.data.title)+'</h2><p>'+esc(r.data.employer)+' · '+esc(r.data.location)+'</p><p>Applied '+date(r.data.applied)+'</p><label class="field">Application status<select data-job-status="'+esc(r.id)+'">'+options(['Applied','Interviewing','Offer received','Rejected','Withdrawn'],r.data.status)+'</select></label><a target="_blank" rel="noopener" href="'+esc(safeUrl(r.data.url))+'">Employer listing ↗</a><div class="actions">'+interviewButton(r.id)+'</div></article>').join('')||'<p class="empty">Applications appear here when you select Mark as applied on a vacancy.</p>')+'</div>';return;
+  $('view').innerHTML=head+'<div class="cards">'+(apps.map(r=>'<article class="card"><h2>'+esc(r.data.title)+'</h2><p>'+esc(r.data.employer)+' · '+esc(r.data.location)+'</p><p>Applied '+date(r.data.applied)+'</p><label class="field">Application status<select data-job-status="'+esc(r.id)+'">'+options(jobStatuses,r.data.status)+'</select></label><a target="_blank" rel="noopener" href="'+esc(safeUrl(r.data.url))+'">Employer listing ↗</a><div class="actions">'+interviewButton(r.id)+'</div></article>').join('')||'<p class="empty">Applications appear here when you select Mark as applied on a vacancy.</p>')+'</div>';return;
  }
  const countries = [...jobCountryLabels].sort((a,b)=>a[1].localeCompare(b[1]));
  const countryOptions = [['','Choose a country'],['All','All countries'],...countries].map(([code,label]) =>

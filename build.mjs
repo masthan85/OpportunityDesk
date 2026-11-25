@@ -9,6 +9,7 @@ const assets = {
   '/sign-in.html': await read('src/client/sign-in.html'),
   '/style.css': await read('src/client/style.css'),
   '/workspace.js': await bundle([
+    'src/shared/catalogue.js',
     'src/client/app.js',
     'src/client/discovery.js',
     'src/client/jobs.js',
@@ -17,9 +18,12 @@ const assets = {
 };
 
 const worker = await bundle([
+  'src/shared/catalogue.js',
   'src/server/entries/owner-seed.js',
   'src/server/entries/handler.js',
   'src/server/jobs/greenhouse.js',
+  'src/server/connector/oauth.js',
+  'src/server/connector/mcp.js',
   'src/server/worker.js',
 ]);
 

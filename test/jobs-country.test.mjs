@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
-const source = ['discovery.js', 'jobs.js'].map(file =>
-  readFileSync(new URL('../src/client/' + file, import.meta.url), 'utf8')
+const source = ['shared/catalogue.js', 'client/discovery.js', 'client/jobs.js'].map(file =>
+  readFileSync(new URL('../src/' + file, import.meta.url), 'utf8')
 ).join('\n');
 const jobs = runInNewContext(source + `
   ({

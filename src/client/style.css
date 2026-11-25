@@ -74,3 +74,6 @@ dialog{padding:0;border:1px solid var(--line);border-radius:14px;width:min(720px
 .prep-modes button[aria-pressed="true"]{background:#efe8fc;border-color:#a180ee;color:#542aaa}
 #interview-mock .card > * + *,#interview-company .card > * + *{margin-top:10px}
 #interview-mock ul{padding-left:20px;line-height:1.6}
+
+.connector{margin-top:18px}.connector h2{margin:0 0 8px;font-size:18px}.connector ol{padding-left:20px;line-height:1.6;font-size:14px}.connector-url code{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#f1eef8;border-radius:8px;padding:9px 11px;word-break:break-all}.consent{max-width:560px;margin:40px auto}.consent h1{margin:8px 0 12px;font-size:26px;letter-spacing:-.03em}.consent p{line-height:1.6}
+[hidden]{display:none!important}

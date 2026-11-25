@@ -1,6 +1,5 @@
-const categories=['Conferences','Calls for speakers','Hackathons','Technical competitions','Industry leadership','Mentoring','Networking events'];
 const topics=['Enterprise data architecture','Databricks and lakehouse','Agentic AI','AI engineering and governance','AI-assisted migration and data modernisation','Enterprise AI strategy and technical leadership'];
-const statuses=['Watching','Drafting','Submitted','Awaiting decision','Accepted','Declined','Completed','Archived'];
+const statuses=opportunityStatuses;
 const templates=[
   ['Speaker biography','[Name] is a [role] specialising in [topics], with experience in [relevant work].\n\nFor [event], [name] will share [specific practitioner lesson] from [approved project context].\n\nTailor to [word limit]. Add one relevant, verifiable credential and confirm permission to name clients.'],
   ['Talk abstract','Title: [Specific problem and what the audience will learn]\nAudience and level: [Who will benefit]\nProblem: [What made the work difficult]\nApproach: [Architecture decision, trade-offs and safeguards]\nEvidence: [Approved outcome and how it was measured]\nTakeaways: [Three actions attendees can apply]\nFormat and duration: [As requested by organiser]'],

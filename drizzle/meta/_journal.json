@@ -1,1 +1,1 @@
-{"version": "7", "dialect": "sqlite", "entries": [{"idx": 0, "version": "6", "when": 1794950000000, "tag": "0000_workspace", "breakpoints": true}, {"idx": 1, "version": "6", "when": 1794957500000, "tag": "0001_users", "breakpoints": true}]}
+{"version": "7", "dialect": "sqlite", "entries": [{"idx": 0, "version": "6", "when": 1794950000000, "tag": "0000_workspace", "breakpoints": true}, {"idx": 1, "version": "6", "when": 1794957500000, "tag": "0001_users", "breakpoints": true}, {"idx": 2, "version": "6", "when": 1795600000000, "tag": "0002_connector", "breakpoints": true}]}
