@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Opportunity Desk</string>
+    <string name="title_activity_main">Opportunity Desk</string>
+    <string name="package_name">com.opportunitydesk.app</string>
+    <string name="custom_url_scheme">com.opportunitydesk.app</string>
+</resources>

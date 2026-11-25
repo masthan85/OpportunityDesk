@@ -8,5 +8,11 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node build.mjs && node --test"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2"
   }
 }

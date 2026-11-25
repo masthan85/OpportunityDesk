@@ -1,0 +1,5 @@
+{
+  "appId": "com.opportunitydesk.app",
+  "appName": "Opportunity Desk",
+  "webDir": "dist/client"
+}

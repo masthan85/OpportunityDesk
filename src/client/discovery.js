@@ -1,87 +1,350 @@
 // Dates and participation routes checked against organiser listings on 18 November 2026.
-const catalogue = [
-["ny-ai", "US", "The AI Summit New York", "Conferences", "2026-12-09", "2026-12-10", "Javits Center, New York", "Enterprise AI deployment and applied strategy.", "https://newyork.theaisummit.com/about/faqs/", "Attendance details"],
-["aaai27", "CA", "AAAI-27", "Conferences", "2027-02-16", "2027-02-23", "Montréal, Canada", "AI research, workshops and technical exchange. Main paper submissions closed.", "https://aaai.org/conference/aaai/aaai-27/", "Registration details"],
-["ai-neo", "JP", "AI Expo NEO", "Networking events", "2027-01-07", "2027-01-08", "Tokyo International Forum", "Meet AI technology exhibitors and explore their applications.", "https://www.nextech-week.jp/hub/ja-jp/about/ai.html", "Organiser details"],
-["ai-aus", "AU", "The AI Summit Australia", "Industry leadership", "2027-08-23", "2027-08-25", "Melbourne Convention and Exhibition Centre", "Enterprise strategy for moving AI from pilots into production.", "https://australia.theaisummit.com/", "Register interest"],
-["gitex-dubai", "AE", "GITEX Global", "Conferences", "2026-12-07", "2026-12-11", "Dubai, United Arab Emirates", "Summit at Dubai World Trade Centre on 7 December, followed by the expo at Dubai Exhibition Centre.", "https://www.gitex.com/plan-your-visit-2026", "Ticket details"],
-["warsaw-ai", "PL", "Code Europe AI speaker call", "Calls for speakers", "2027-04-21", "2027-04-22", "Online then Warsaw, Poland", "Propose a session for AI, data and platform engineers. Deadline 23:59 CET.", "https://www.codeeurope.pl/cfp", "Submit a session", "2027-03-14"],
-["gitex-berlin", "DE", "GITEX AI Europe", "Conferences", "2027-06-27", "2027-06-29", "Messe Berlin, Germany", "European AI and technology exhibition. Check organiser schedule before booking.", "https://www.gitexeurope.com/home-2027", "Event details"],
-["mwc27", "ES", "MWC Barcelona", "Networking events", "2027-03-01", "2027-03-04", "Fira Gran Via, Barcelona, Spain", "Connect with teams working on AI, cloud and data infrastructure.", "https://www.mwcbarcelona.com/", "Event details"],
- ['sheffield11','GB','HackSheffield 11','Hackathons','2026-11-28','2026-11-29','The Diamond, Sheffield','Student team hackathon hosted by the University of Sheffield Computer Science Society.','https://hacksheffield.uk/','Register a team'],
- ['infer','Global','Infer-a-thon with Superlinked','Technical competitions','2026-12-05','2026-12-20','Online worldwide','Build an AI agent for Indian business workflows or engineering tasks. Professionals and students can enter.','https://www.geekroom.co.in/event/infer-a-thon','Register with organiser','2026-12-05'],
- ['hipc','IN','IEEE HiPC 2026','Conferences','2026-12-16','2026-12-19','Bengaluru','High-performance computing, analytics and the infrastructure behind AI.','https://reg.hipc.org/node/138','Conference registration'],
- ['learningpanda','IN','National AI Agents Hackathon','Hackathons','2026-12-18','2026-12-25','India','For college and university students aged 18+. Teams of two to four build education agents. Deadline is 23:59 IST.','https://www.learningpanda.ai/hackathon','Register a team','2026-12-15'],
- ['indicon','IN','IEEE INDICON 2026','Conferences','2026-12-18','2026-12-20','Sri Sairam Engineering College, Chennai','AI and cyber-physical systems. Paper submissions have closed.','https://www.indicon2026.com/','View conference'],
- ['nexusmentor','GB','Women in AI Hackathon mentoring','Mentoring','2027-02-06','2027-02-06','UK · venue to be confirmed','Explore the mentor expression-of-interest route for this AI build day.','https://nexusinnovation.io/events/women-in-ai-hackathon?interest=mentor','Mentor enquiry'],
- ['indiafest','IN','India AI Fest 2027','Industry leadership','2027-02-15','2027-02-18','Bengaluru','Meet AI builders and enterprise leaders discussing adoption at scale.','https://www.indiaaifest.com/','View event'],
- ['swics','GB','Hack With SWiCS','Hackathons','2027-02-20','2027-02-20','The Diamond, Sheffield','Student teams build AI-powered solutions in a six-hour challenge.','https://hackwithswics.com/','Registration details'],
- ['bdai','GB','Big Data & AI World','Networking events','2027-03-10','2027-03-11','ExCeL London','Meet enterprise data leaders working on responsible AI and platform strategy.','https://www.techshowlondon.co.uk/big-data-ai-world','Register interest'],
- ['irm-uk-2027','GB','Data & AI Governance Conference Europe 2027','Calls for speakers','2027-03-15','2027-03-16','133 Houndsditch, London','Speaker submissions closed on 9 November. Conference attendance and programme information remain available.','https://datagovernance.irmuk.co.uk/','View conference','2026-11-09'],
- ['big-data-ldn-2027','GB','Big Data LDN 2027','Conferences','2027-09-22','2027-09-23','Olympia London','Data engineering, architecture and AI industry conference.','https://www.bigdataldn.com/','Register interest'],
- ['decoded','GB','Data Decoded Manchester','Conferences','2027-10-12','2027-10-13','Manchester Central','Practitioner sessions on data governance, platform modernisation and AI strategy.','https://datadecoded.com/mcr/faqs/','View conference']
-].map(([id,country,title,category,start,end,venue,fit,source,action,deadline])=>({id,country,title,category,start,end,venue,fit,source,action,deadline}));
-const regions={
-  North:'AX DK EE FO FI GB GG IE IM IS JE LT LV NO SE SJ',
-  West:'AT BE CH DE FR LI LU MC NL',
-  East:'BG BY CZ HU MD PL RO RU SK UA',
-  South:'AD AL BA ES GI GR HR IT ME MK MT PT RS SI SM VA XK',
-  MiddleEast:'AE BH CY EG IL IQ IR JO KW LB OM PS QA SA SY TR YE'
+const PERSONA_LABELS = {
+  all: 'All profiles (Universal + Roles)',
+  qa_engineer: 'Test / QA Engineer',
+  software_engineer: 'Software Engineer',
+  business_analyst: 'Business Analyst',
+  college_grad: 'College Graduate / Entry',
+  data_ai: 'Data & AI Specialist'
 };
-const european=Object.values(regions).slice(0,4).join(' ').split(' ').concat(['CY','TR','AM','AZ','GE','KZ']);
-const display=new Intl.DisplayNames(['en-GB'],{type:'region'});
-const countryNames={Global:'All countries',GB:'United Kingdom',IN:'India',US:'United States (USA)',JP:'Japan',AU:'Australia',CA:'Canada',Europe:'All Europe',North:'Northern Europe',West:'Western Europe',East:'Eastern Europe',South:'Southern Europe',MiddleEast:'Middle East'};
-for(const code of [...new Set(european)].sort((a,b)=>display.of(a).localeCompare(display.of(b))))countryNames[code]??=display.of(code);
-function matchesLocation(selected,code){
- if(selected==='Global'||code==='Global'||selected===code)return true;
- if(selected==='Europe')return european.includes(code);
- return regions[selected]?.split(' ').includes(code)||false;
+
+const rawCatalogue = [
+  ["ny-ai", "US", "The AI Summit New York", "Conferences", "2026-12-09", "2026-12-10", "Javits Center, New York", "Enterprise AI deployment and applied strategy.", "https://newyork.theaisummit.com/about/faqs/", "Attendance details", null, ["universal"]],
+  ["aaai27", "CA", "AAAI-27", "Conferences", "2027-02-16", "2027-02-23", "Montréal, Canada", "AI research, workshops and technical exchange. Main paper submissions closed.", "https://aaai.org/conference/aaai/aaai-27/", "Registration details", null, ["universal"]],
+  ["ai-neo", "JP", "AI Expo NEO", "Networking events", "2027-01-07", "2027-01-08", "Tokyo International Forum", "Meet AI technology exhibitors and explore their applications.", "https://www.nextech-week.jp/hub/ja-jp/about/ai.html", "Organiser details", null, ["universal"]],
+  ["ai-aus", "AU", "The AI Summit Australia", "Industry leadership", "2027-08-23", "2027-08-25", "Melbourne Convention and Exhibition Centre", "Enterprise strategy for moving AI from pilots into production.", "https://australia.theaisummit.com/", "Register interest", null, ["universal"]],
+  ["gitex-dubai", "AE", "GITEX Global", "Conferences", "2026-12-07", "2026-12-11", "Dubai, United Arab Emirates", "Summit at Dubai World Trade Centre on 7 December, followed by the expo at Dubai Exhibition Centre.", "https://www.gitex.com/plan-your-visit-2026", "Ticket details", null, ["universal"]],
+  ["warsaw-ai", "PL", "Code Europe AI speaker call", "Calls for speakers", "2027-04-21", "2027-04-22", "Online then Warsaw, Poland", "Propose a session for AI, data and platform engineers. Deadline 23:59 CET.", "https://www.codeeurope.pl/cfp", "Submit a session", "2027-03-14", ["universal"]],
+  ["gitex-berlin", "DE", "GITEX AI Europe", "Conferences", "2027-06-27", "2027-06-29", "Messe Berlin, Germany", "European AI and technology exhibition. Check organiser schedule before booking.", "https://www.gitexeurope.com/home-2027", "Event details", null, ["universal"]],
+  ["mwc27", "ES", "MWC Barcelona", "Networking events", "2027-03-01", "2027-03-04", "Fira Gran Via, Barcelona, Spain", "Connect with teams working on AI, cloud and data infrastructure.", "https://www.mwcbarcelona.com/", "Event details", null, ["universal"]],
+  ["sheffield11", "GB", "HackSheffield 11", "Hackathons", "2026-11-28", "2026-11-29", "The Diamond, Sheffield", "Student team hackathon hosted by the University of Sheffield Computer Science Society.", "https://hacksheffield.uk/", "Register a team", null, ["universal"]],
+  ["infer", "Global", "Infer-a-thon with Superlinked", "Technical competitions", "2026-12-05", "2026-12-20", "Online worldwide", "Build an AI agent for Indian business workflows or engineering tasks. Professionals and students can enter.", "https://www.geekroom.co.in/event/infer-a-thon", "Register with organiser", "2026-12-05", ["universal"]],
+  ["hipc", "IN", "IEEE HiPC 2026", "Conferences", "2026-12-16", "2026-12-19", "Bengaluru", "High-performance computing, analytics and the infrastructure behind AI.", "https://reg.hipc.org/node/138", "Conference registration", null, ["universal"]],
+  ["learningpanda", "IN", "National AI Agents Hackathon", "Hackathons", "2026-12-18", "2026-12-25", "India", "For college and university students aged 18+. Teams of two to four build education agents. Deadline is 23:59 IST.", "https://www.learningpanda.ai/hackathon", "Register a team", "2026-12-15", ["universal"]],
+  ["indicon", "IN", "IEEE INDICON 2026", "Conferences", "2026-12-18", "2026-12-20", "Sri Sairam Engineering College, Chennai", "AI and cyber-physical systems. Paper submissions have closed.", "https://www.indicon2026.com/", "View conference", null, ["universal"]],
+  ["nexusmentor", "GB", "Women in AI Hackathon mentoring", "Mentoring", "2027-02-06", "2027-02-06", "UK · venue to be confirmed", "Explore the mentor expression-of-interest route for this AI build day.", "https://nexusinnovation.io/events/women-in-ai-hackathon?interest=mentor", "Mentor enquiry", null, ["universal"]],
+  ["indiafest", "IN", "India AI Fest 2027", "Industry leadership", "2027-02-15", "2027-02-18", "Bengaluru", "Meet AI builders and enterprise leaders discussing adoption at scale.", "https://www.indiaaifest.com/", "View event", null, ["universal"]],
+  ["swics", "GB", "Hack With SWiCS", "Hackathons", "2027-02-20", "2027-02-20", "The Diamond, Sheffield", "Student teams build AI-powered solutions in a six-hour challenge.", "https://hackwithswics.com/", "Registration details", null, ["universal"]],
+  ["bdai", "GB", "Big Data & AI World", "Networking events", "2027-03-10", "2027-03-11", "ExCeL London", "Meet enterprise data leaders working on responsible AI and platform strategy.", "https://www.techshowlondon.co.uk/big-data-ai-world", "Register interest", null, ["universal"]],
+  ["irm-uk-2027", "GB", "Data & AI Governance Conference Europe 2027", "Calls for speakers", "2027-03-15", "2027-03-16", "133 Houndsditch, London", "Speaker submissions closed on 9 November. Conference attendance and programme information remain available.", "https://datagovernance.irmuk.co.uk/", "View conference", "2026-11-09", ["universal"]],
+  ["big-data-ldn-2027", "GB", "Big Data LDN 2027", "Conferences", "2027-09-22", "2027-09-23", "Olympia London", "Data engineering, architecture and AI industry conference.", "https://www.bigdataldn.com/", "Register interest", null, ["universal"]],
+  ["decoded", "GB", "Data Decoded Manchester", "Conferences", "2027-10-12", "2027-10-13", "Manchester Central", "Practitioner sessions on data governance, platform modernisation and AI strategy.", "https://datadecoded.com/mcr/faqs/", "View conference", null, ["universal"]],
+
+  // Persona-specific starter roles & tracks
+  ["qa-automation-track", "Global", "Test Automation & Quality Engineering Track", "Jobs", "2026-12-01", "2026-12-31", "Remote / Hybrid", "Track QA, SDET, Playwright/Cypress automation, and release reliability openings.", "https://boards.greenhouse.io/", "Browse boards", "2026-12-20", ["qa_engineer"]],
+  ["swe-platform-track", "Global", "Software & Platform Engineering Track", "Jobs", "2026-12-01", "2026-12-31", "Remote / Hybrid", "Track full-stack, backend, API, and distributed systems engineering opportunities.", "https://boards.greenhouse.io/", "Browse boards", "2026-12-20", ["software_engineer"]],
+  ["ba-product-track", "Global", "Business & Systems Analysis Track", "Jobs", "2026-12-01", "2026-12-31", "Remote / Hybrid", "Track business analysis, requirements discovery, and product operations roles.", "https://boards.greenhouse.io/", "Browse boards", "2026-12-20", ["business_analyst"]],
+  ["grad-entry-track", "Global", "Graduate & Early-Career Tech Track", "Jobs", "2026-12-01", "2027-01-31", "Global / Hybrid", "Track graduate schemes, junior roles, and early-career engineering programmes.", "https://boards.greenhouse.io/", "Browse boards", "2027-01-15", ["college_grad"]],
+  ["data-ai-track", "Global", "Data & AI Engineering Track", "Jobs", "2026-12-01", "2026-12-31", "Remote / Hybrid", "Track data platform, ML engineering, and applied AI roles.", "https://boards.greenhouse.io/", "Browse boards", "2026-12-20", ["data_ai"]]
+];
+
+const catalogue = rawCatalogue.map(([id, country, title, category, start, end, venue, fit, source, action, deadline, personas]) => ({
+  id,
+  country,
+  title,
+  category,
+  start,
+  end,
+  venue,
+  fit,
+  source,
+  action,
+  deadline,
+  personas: Array.isArray(personas) && personas.length ? personas : ["universal"]
+}));
+
+const regions = {
+  North: 'AX DK EE FO FI GB GG IE IM IS JE LT LV NO SE SJ',
+  West: 'AT BE CH DE FR LI LU MC NL',
+  East: 'BG BY CZ HU MD PL RO RU SK UA',
+  South: 'AD AL BA ES GI GR HR IT ME MK MT PT RS SI SM VA XK',
+  MiddleEast: 'AE BH CY EG IL IQ IR JO KW LB OM PS QA SA SY TR YE'
+};
+
+const european = Object.values(regions).slice(0, 4).join(' ').split(' ').concat(['CY', 'TR', 'AM', 'AZ', 'GE', 'KZ']);
+const display = new Intl.DisplayNames(['en-GB'], { type: 'region' });
+const countryNames = {
+  Global: 'All countries',
+  GB: 'United Kingdom',
+  IN: 'India',
+  US: 'United States (USA)',
+  JP: 'Japan',
+  AU: 'Australia',
+  CA: 'Canada',
+  Europe: 'All Europe',
+  North: 'Northern Europe',
+  West: 'Western Europe',
+  East: 'Eastern Europe',
+  South: 'Southern Europe',
+  MiddleEast: 'Middle East'
+};
+
+for (const code of [...new Set(european)].sort((a, b) => display.of(a).localeCompare(display.of(b)))) {
+  countryNames[code] ??= display.of(code);
 }
-let discoveryCountry='Global',discoveryType='',discoverySearch='';
-const zoneCountries={"Europe/Andorra": "AD", "Asia/Dubai": "AE", "Asia/Kabul": "AF", "America/Antigua": "AG", "America/Anguilla": "AI", "Europe/Tirane": "AL", "Asia/Yerevan": "AM", "Africa/Luanda": "AO", "Antarctica/McMurdo": "AQ", "Antarctica/Casey": "AQ", "Antarctica/Davis": "AQ", "Antarctica/DumontDUrville": "AQ", "Antarctica/Mawson": "AQ", "Antarctica/Palmer": "AQ", "Antarctica/Rothera": "AQ", "Antarctica/Syowa": "AQ", "Antarctica/Troll": "AQ", "Antarctica/Vostok": "AQ", "America/Argentina/Buenos_Aires": "AR", "America/Argentina/Cordoba": "AR", "America/Argentina/Salta": "AR", "America/Argentina/Jujuy": "AR", "America/Argentina/Tucuman": "AR", "America/Argentina/Catamarca": "AR", "America/Argentina/La_Rioja": "AR", "America/Argentina/San_Juan": "AR", "America/Argentina/Mendoza": "AR", "America/Argentina/San_Luis": "AR", "America/Argentina/Rio_Gallegos": "AR", "America/Argentina/Ushuaia": "AR", "Pacific/Pago_Pago": "AS", "Europe/Vienna": "AT", "Australia/Lord_Howe": "AU", "Antarctica/Macquarie": "AU", "Australia/Hobart": "AU", "Australia/Melbourne": "AU", "Australia/Sydney": "AU", "Australia/Broken_Hill": "AU", "Australia/Brisbane": "AU", "Australia/Lindeman": "AU", "Australia/Adelaide": "AU", "Australia/Darwin": "AU", "Australia/Perth": "AU", "Australia/Eucla": "AU", "America/Aruba": "AW", "Europe/Mariehamn": "AX", "Asia/Baku": "AZ", "Europe/Sarajevo": "BA", "America/Barbados": "BB", "Asia/Dhaka": "BD", "Europe/Brussels": "BE", "Africa/Ouagadougou": "BF", "Europe/Sofia": "BG", "Asia/Bahrain": "BH", "Africa/Bujumbura": "BI", "Africa/Porto-Novo": "BJ", "America/St_Barthelemy": "BL", "Atlantic/Bermuda": "BM", "Asia/Brunei": "BN", "America/La_Paz": "BO", "America/Kralendijk": "BQ", "America/Noronha": "BR", "America/Belem": "BR", "America/Fortaleza": "BR", "America/Recife": "BR", "America/Araguaina": "BR", "America/Maceio": "BR", "America/Bahia": "BR", "America/Sao_Paulo": "BR", "America/Campo_Grande": "BR", "America/Cuiaba": "BR", "America/Santarem": "BR", "America/Porto_Velho": "BR", "America/Boa_Vista": "BR", "America/Manaus": "BR", "America/Eirunepe": "BR", "America/Rio_Branco": "BR", "America/Nassau": "BS", "Asia/Thimphu": "BT", "Africa/Gaborone": "BW", "Europe/Minsk": "BY", "America/Belize": "BZ", "America/St_Johns": "CA", "America/Halifax": "CA", "America/Glace_Bay": "CA", "America/Moncton": "CA", "America/Goose_Bay": "CA", "America/Blanc-Sablon": "CA", "America/Toronto": "CA", "America/Iqaluit": "CA", "America/Atikokan": "CA", "America/Winnipeg": "CA", "America/Resolute": "CA", "America/Rankin_Inlet": "CA", "America/Regina": "CA", "America/Swift_Current": "CA", "America/Edmonton": "CA", "America/Cambridge_Bay": "CA", "America/Inuvik": "CA", "America/Vancouver": "CA", "America/Creston": "CA", "America/Dawson_Creek": "CA", "America/Fort_Nelson": "CA", "America/Whitehorse": "CA", "America/Dawson": "CA", "Indian/Cocos": "CC", "Africa/Kinshasa": "CD", "Africa/Lubumbashi": "CD", "Africa/Bangui": "CF", "Africa/Brazzaville": "CG", "Europe/Zurich": "CH", "Africa/Abidjan": "CI", "Pacific/Rarotonga": "CK", "America/Santiago": "CL", "America/Coyhaique": "CL", "America/Punta_Arenas": "CL", "Pacific/Easter": "CL", "Africa/Douala": "CM", "Asia/Shanghai": "CN", "Asia/Urumqi": "CN", "America/Bogota": "CO", "America/Costa_Rica": "CR", "America/Havana": "CU", "Atlantic/Cape_Verde": "CV", "America/Curacao": "CW", "Indian/Christmas": "CX", "Asia/Nicosia": "CY", "Asia/Famagusta": "CY", "Europe/Prague": "CZ", "Europe/Berlin": "DE", "Europe/Busingen": "DE", "Africa/Djibouti": "DJ", "Europe/Copenhagen": "DK", "America/Dominica": "DM", "America/Santo_Domingo": "DO", "Africa/Algiers": "DZ", "America/Guayaquil": "EC", "Pacific/Galapagos": "EC", "Europe/Tallinn": "EE", "Africa/Cairo": "EG", "Africa/El_Aaiun": "EH", "Africa/Asmara": "ER", "Europe/Madrid": "ES", "Africa/Ceuta": "ES", "Atlantic/Canary": "ES", "Africa/Addis_Ababa": "ET", "Europe/Helsinki": "FI", "Pacific/Fiji": "FJ", "Atlantic/Stanley": "FK", "Pacific/Chuuk": "FM", "Pacific/Pohnpei": "FM", "Pacific/Kosrae": "FM", "Atlantic/Faroe": "FO", "Europe/Paris": "FR", "Africa/Libreville": "GA", "Europe/London": "GB", "America/Grenada": "GD", "Asia/Tbilisi": "GE", "America/Cayenne": "GF", "Europe/Guernsey": "GG", "Africa/Accra": "GH", "Europe/Gibraltar": "GI", "America/Nuuk": "GL", "America/Danmarkshavn": "GL", "America/Scoresbysund": "GL", "America/Thule": "GL", "Africa/Banjul": "GM", "Africa/Conakry": "GN", "America/Guadeloupe": "GP", "Africa/Malabo": "GQ", "Europe/Athens": "GR", "Atlantic/South_Georgia": "GS", "America/Guatemala": "GT", "Pacific/Guam": "GU", "Africa/Bissau": "GW", "America/Guyana": "GY", "Asia/Hong_Kong": "HK", "America/Tegucigalpa": "HN", "Europe/Zagreb": "HR", "America/Port-au-Prince": "HT", "Europe/Budapest": "HU", "Asia/Jakarta": "ID", "Asia/Pontianak": "ID", "Asia/Makassar": "ID", "Asia/Jayapura": "ID", "Europe/Dublin": "IE", "Asia/Jerusalem": "IL", "Europe/Isle_of_Man": "IM", "Asia/Kolkata": "IN", "Indian/Chagos": "IO", "Asia/Baghdad": "IQ", "Asia/Tehran": "IR", "Atlantic/Reykjavik": "IS", "Europe/Rome": "IT", "Europe/Jersey": "JE", "America/Jamaica": "JM", "Asia/Amman": "JO", "Asia/Tokyo": "JP", "Africa/Nairobi": "KE", "Asia/Bishkek": "KG", "Asia/Phnom_Penh": "KH", "Pacific/Tarawa": "KI", "Pacific/Kanton": "KI", "Pacific/Kiritimati": "KI", "Indian/Comoro": "KM", "America/St_Kitts": "KN", "Asia/Pyongyang": "KP", "Asia/Seoul": "KR", "Asia/Kuwait": "KW", "America/Cayman": "KY", "Asia/Almaty": "KZ", "Asia/Qyzylorda": "KZ", "Asia/Qostanay": "KZ", "Asia/Aqtobe": "KZ", "Asia/Aqtau": "KZ", "Asia/Atyrau": "KZ", "Asia/Oral": "KZ", "Asia/Vientiane": "LA", "Asia/Beirut": "LB", "America/St_Lucia": "LC", "Europe/Vaduz": "LI", "Asia/Colombo": "LK", "Africa/Monrovia": "LR", "Africa/Maseru": "LS", "Europe/Vilnius": "LT", "Europe/Luxembourg": "LU", "Europe/Riga": "LV", "Africa/Tripoli": "LY", "Africa/Casablanca": "MA", "Europe/Monaco": "MC", "Europe/Chisinau": "MD", "Europe/Podgorica": "ME", "America/Marigot": "MF", "Indian/Antananarivo": "MG", "Pacific/Majuro": "MH", "Pacific/Kwajalein": "MH", "Europe/Skopje": "MK", "Africa/Bamako": "ML", "Asia/Yangon": "MM", "Asia/Ulaanbaatar": "MN", "Asia/Hovd": "MN", "Asia/Macau": "MO", "Pacific/Saipan": "MP", "America/Martinique": "MQ", "Africa/Nouakchott": "MR", "America/Montserrat": "MS", "Europe/Malta": "MT", "Indian/Mauritius": "MU", "Indian/Maldives": "MV", "Africa/Blantyre": "MW", "America/Mexico_City": "MX", "America/Cancun": "MX", "America/Merida": "MX", "America/Monterrey": "MX", "America/Matamoros": "MX", "America/Chihuahua": "MX", "America/Ciudad_Juarez": "MX", "America/Ojinaga": "MX", "America/Mazatlan": "MX", "America/Bahia_Banderas": "MX", "America/Hermosillo": "MX", "America/Tijuana": "MX", "Asia/Kuala_Lumpur": "MY", "Asia/Kuching": "MY", "Africa/Maputo": "MZ", "Africa/Windhoek": "NA", "Pacific/Noumea": "NC", "Africa/Niamey": "NE", "Pacific/Norfolk": "NF", "Africa/Lagos": "NG", "America/Managua": "NI", "Europe/Amsterdam": "NL", "Europe/Oslo": "NO", "Asia/Kathmandu": "NP", "Pacific/Nauru": "NR", "Pacific/Niue": "NU", "Pacific/Auckland": "NZ", "Pacific/Chatham": "NZ", "Asia/Muscat": "OM", "America/Panama": "PA", "America/Lima": "PE", "Pacific/Tahiti": "PF", "Pacific/Marquesas": "PF", "Pacific/Gambier": "PF", "Pacific/Port_Moresby": "PG", "Pacific/Bougainville": "PG", "Asia/Manila": "PH", "Asia/Karachi": "PK", "Europe/Warsaw": "PL", "America/Miquelon": "PM", "Pacific/Pitcairn": "PN", "America/Puerto_Rico": "PR", "Asia/Gaza": "PS", "Asia/Hebron": "PS", "Europe/Lisbon": "PT", "Atlantic/Madeira": "PT", "Atlantic/Azores": "PT", "Pacific/Palau": "PW", "America/Asuncion": "PY", "Asia/Qatar": "QA", "Indian/Reunion": "RE", "Europe/Bucharest": "RO", "Europe/Belgrade": "RS", "Europe/Kaliningrad": "RU", "Europe/Moscow": "RU", "Europe/Simferopol": "UA", "Europe/Kirov": "RU", "Europe/Volgograd": "RU", "Europe/Astrakhan": "RU", "Europe/Saratov": "RU", "Europe/Ulyanovsk": "RU", "Europe/Samara": "RU", "Asia/Yekaterinburg": "RU", "Asia/Omsk": "RU", "Asia/Novosibirsk": "RU", "Asia/Barnaul": "RU", "Asia/Tomsk": "RU", "Asia/Novokuznetsk": "RU", "Asia/Krasnoyarsk": "RU", "Asia/Irkutsk": "RU", "Asia/Chita": "RU", "Asia/Yakutsk": "RU", "Asia/Khandyga": "RU", "Asia/Vladivostok": "RU", "Asia/Ust-Nera": "RU", "Asia/Magadan": "RU", "Asia/Sakhalin": "RU", "Asia/Srednekolymsk": "RU", "Asia/Kamchatka": "RU", "Asia/Anadyr": "RU", "Africa/Kigali": "RW", "Asia/Riyadh": "SA", "Pacific/Guadalcanal": "SB", "Indian/Mahe": "SC", "Africa/Khartoum": "SD", "Europe/Stockholm": "SE", "Asia/Singapore": "SG", "Atlantic/St_Helena": "SH", "Europe/Ljubljana": "SI", "Arctic/Longyearbyen": "SJ", "Europe/Bratislava": "SK", "Africa/Freetown": "SL", "Europe/San_Marino": "SM", "Africa/Dakar": "SN", "Africa/Mogadishu": "SO", "America/Paramaribo": "SR", "Africa/Juba": "SS", "Africa/Sao_Tome": "ST", "America/El_Salvador": "SV", "America/Lower_Princes": "SX", "Asia/Damascus": "SY", "Africa/Mbabane": "SZ", "America/Grand_Turk": "TC", "Africa/Ndjamena": "TD", "Indian/Kerguelen": "TF", "Africa/Lome": "TG", "Asia/Bangkok": "TH", "Asia/Dushanbe": "TJ", "Pacific/Fakaofo": "TK", "Asia/Dili": "TL", "Asia/Ashgabat": "TM", "Africa/Tunis": "TN", "Pacific/Tongatapu": "TO", "Europe/Istanbul": "TR", "America/Port_of_Spain": "TT", "Pacific/Funafuti": "TV", "Asia/Taipei": "TW", "Africa/Dar_es_Salaam": "TZ", "Europe/Kyiv": "UA", "Africa/Kampala": "UG", "Pacific/Midway": "UM", "Pacific/Wake": "UM", "America/New_York": "US", "America/Detroit": "US", "America/Kentucky/Louisville": "US", "America/Kentucky/Monticello": "US", "America/Indiana/Indianapolis": "US", "America/Indiana/Vincennes": "US", "America/Indiana/Winamac": "US", "America/Indiana/Marengo": "US", "America/Indiana/Petersburg": "US", "America/Indiana/Vevay": "US", "America/Chicago": "US", "America/Indiana/Tell_City": "US", "America/Indiana/Knox": "US", "America/Menominee": "US", "America/North_Dakota/Center": "US", "America/North_Dakota/New_Salem": "US", "America/North_Dakota/Beulah": "US", "America/Denver": "US", "America/Boise": "US", "America/Phoenix": "US", "America/Los_Angeles": "US", "America/Anchorage": "US", "America/Juneau": "US", "America/Sitka": "US", "America/Metlakatla": "US", "America/Yakutat": "US", "America/Nome": "US", "America/Adak": "US", "Pacific/Honolulu": "US", "America/Montevideo": "UY", "Asia/Samarkand": "UZ", "Asia/Tashkent": "UZ", "Europe/Vatican": "VA", "America/St_Vincent": "VC", "America/Caracas": "VE", "America/Tortola": "VG", "America/St_Thomas": "VI", "Asia/Ho_Chi_Minh": "VN", "Pacific/Efate": "VU", "Pacific/Wallis": "WF", "Pacific/Apia": "WS", "Asia/Aden": "YE", "Indian/Mayotte": "YT", "Africa/Johannesburg": "ZA", "Africa/Lusaka": "ZM", "Africa/Harare": "ZW", "Asia/Calcutta": "IN", "Europe/Kiev": "UA"};
+
+function matchesLocation(selected, code) {
+  if (selected === 'Global' || code === 'Global' || selected === code) return true;
+  if (selected === 'Europe') return european.includes(code);
+  return regions[selected]?.split(' ').includes(code) || false;
+}
+
+function matchesPersona(selectedPersona, itemPersonas) {
+  if (!selectedPersona || selectedPersona === 'all') return true;
+  const list = Array.isArray(itemPersonas) ? itemPersonas : ['universal'];
+  return list.includes('universal') || list.includes(selectedPersona);
+}
+
+let discoveryCountry = 'Global';
+let discoveryPersona = 'all';
+let discoveryType = '';
+let discoverySearch = '';
+
+const zoneCountries = {
+  "Europe/Andorra": "AD", "Asia/Dubai": "AE", "Asia/Kabul": "AF", "America/Antigua": "AG", "America/Anguilla": "AI",
+  "Europe/Tirane": "AL", "Asia/Yerevan": "AM", "Africa/Luanda": "AO", "Antarctica/McMurdo": "AQ", "Antarctica/Casey": "AQ",
+  "Antarctica/Davis": "AQ", "Antarctica/DumontDUrville": "AQ", "Antarctica/Mawson": "AQ", "Antarctica/Palmer": "AQ",
+  "Antarctica/Rothera": "AQ", "Antarctica/Syowa": "AQ", "Antarctica/Troll": "AQ", "Antarctica/Vostok": "AQ",
+  "America/Argentina/Buenos_Aires": "AR", "America/Argentina/Cordoba": "AR", "America/Argentina/Salta": "AR",
+  "America/Argentina/Jujuy": "AR", "America/Argentina/Tucuman": "AR", "America/Argentina/Catamarca": "AR",
+  "America/Argentina/La_Rioja": "AR", "America/Argentina/San_Juan": "AR", "America/Argentina/Mendoza": "AR",
+  "America/Argentina/San_Luis": "AR", "America/Argentina/Rio_Gallegos": "AR", "America/Argentina/Ushuaia": "AR",
+  "Pacific/Pago_Pago": "AS", "Europe/Vienna": "AT", "Australia/Lord_Howe": "AU", "Antarctica/Macquarie": "AU",
+  "Australia/Hobart": "AU", "Australia/Melbourne": "AU", "Australia/Sydney": "AU", "Australia/Broken_Hill": "AU",
+  "Australia/Brisbane": "AU", "Australia/Lindeman": "AU", "Australia/Adelaide": "AU", "Australia/Darwin": "AU",
+  "Australia/Perth": "AU", "Australia/Eucla": "AU", "America/Aruba": "AW", "Europe/Mariehamn": "AX",
+  "Asia/Baku": "AZ", "Europe/Sarajevo": "BA", "America/Barbados": "BB", "Asia/Dhaka": "BD", "Europe/Brussels": "BE",
+  "Africa/Ouagadougou": "BF", "Europe/Sofia": "BG", "Asia/Bahrain": "BH", "Africa/Bujumbura": "BI",
+  "Africa/Porto-Novo": "BJ", "America/St_Barthelemy": "BL", "Atlantic/Bermuda": "BM", "Asia/Brunei": "BN",
+  "America/La_Paz": "BO", "America/Kralendijk": "BQ", "America/Noronha": "BR", "America/Belem": "BR",
+  "America/Fortaleza": "BR", "America/Recife": "BR", "America/Araguaina": "BR", "America/Maceio": "BR",
+  "America/Bahia": "BR", "America/Sao_Paulo": "BR", "America/Campo_Grande": "BR", "America/Cuiaba": "BR",
+  "America/Santarem": "BR", "America/Porto_Velho": "BR", "America/Boa_Vista": "BR", "America/Manaus": "BR",
+  "America/Eirunepe": "BR", "America/Rio_Branco": "BR", "America/Nassau": "BS", "Asia/Thimphu": "BT",
+  "Africa/Gaborone": "BW", "Europe/Minsk": "BY", "America/Belize": "BZ", "America/St_Johns": "CA",
+  "America/Halifax": "CA", "America/Glace_Bay": "CA", "America/Moncton": "CA", "America/Goose_Bay": "CA",
+  "America/Blanc-Sablon": "CA", "America/Toronto": "CA", "America/Iqaluit": "CA", "America/Atikokan": "CA",
+  "America/Winnipeg": "CA", "America/Resolute": "CA", "America/Rankin_Inlet": "CA", "America/Regina": "CA",
+  "America/Swift_Current": "CA", "America/Edmonton": "CA", "America/Cambridge_Bay": "CA", "America/Inuvik": "CA",
+  "America/Vancouver": "CA", "America/Creston": "CA", "America/Dawson_Creek": "CA", "America/Fort_Nelson": "CA",
+  "America/Whitehorse": "CA", "America/Dawson": "CA", "Indian/Cocos": "CC", "Africa/Kinshasa": "CD",
+  "Africa/Lubumbashi": "CD", "Africa/Bangui": "CF", "Africa/Brazzaville": "CG", "Europe/Zurich": "CH",
+  "Africa/Abidjan": "CI", "Pacific/Rarotonga": "CK", "America/Santiago": "CL", "America/Coyhaique": "CL",
+  "America/Punta_Arenas": "CL", "Pacific/Easter": "CL", "Africa/Douala": "CM", "Asia/Shanghai": "CN",
+  "Asia/Urumqi": "CN", "America/Bogota": "CO", "America/Costa_Rica": "CR", "America/Havana": "CU",
+  "Atlantic/Cape_Verde": "CV", "America/Curacao": "CW", "Indian/Christmas": "CX", "Asia/Nicosia": "CY",
+  "Asia/Famagusta": "CY", "Europe/Prague": "CZ", "Europe/Berlin": "DE", "Europe/Busingen": "DE",
+  "Africa/Djibouti": "DJ", "Europe/Copenhagen": "DK", "America/Dominica": "DM", "America/Santo_Domingo": "DO",
+  "Africa/Algiers": "DZ", "America/Guayaquil": "EC", "Pacific/Galapagos": "EC", "Europe/Tallinn": "EE",
+  "Africa/Cairo": "EG", "Africa/El_Aaiun": "EH", "Africa/Asmara": "ER", "Europe/Madrid": "ES",
+  "Africa/Ceuta": "ES", "Atlantic/Canary": "ES", "Africa/Addis_Ababa": "ET", "Europe/Helsinki": "FI",
+  "Pacific/Fiji": "FJ", "Atlantic/Stanley": "FK", "Pacific/Chuuk": "FM", "Pacific/Pohnpei": "FM",
+  "Pacific/Kosrae": "FM", "Atlantic/Faroe": "FO", "Europe/Paris": "FR", "Africa/Libreville": "GA",
+  "Europe/London": "GB", "America/Grenada": "GD", "Asia/Tbilisi": "GE", "America/Cayenne": "GF",
+  "Europe/Guernsey": "GG", "Africa/Accra": "GH", "Europe/Gibraltar": "GI", "America/Nuuk": "GL",
+  "America/Danmarkshavn": "GL", "America/Scoresbysund": "GL", "America/Thule": "GL", "Africa/Banjul": "GM",
+  "Africa/Conakry": "GN", "America/Guadeloupe": "GP", "Africa/Malabo": "GQ", "Europe/Athens": "GR",
+  "Atlantic/South_Georgia": "GS", "America/Guatemala": "GT", "Pacific/Guam": "GU", "Africa/Bissau": "GW",
+  "America/Guyana": "GY", "Asia/Hong_Kong": "HK", "America/Tegucigalpa": "HN", "Europe/Zagreb": "HR",
+  "America/Port-au-Prince": "HT", "Europe/Budapest": "HU", "Asia/Jakarta": "ID", "Asia/Pontianak": "ID",
+  "Asia/Makassar": "ID", "Asia/Jayapura": "ID", "Europe/Dublin": "IE", "Asia/Jerusalem": "IL",
+  "Europe/Isle_of_Man": "IM", "Asia/Kolkata": "IN", "Indian/Chagos": "IO", "Asia/Baghdad": "IQ",
+  "Asia/Tehran": "IR", "Atlantic/Reykjavik": "IS", "Europe/Rome": "IT", "Europe/Jersey": "JE",
+  "America/Jamaica": "JM", "Asia/Amman": "JO", "Asia/Tokyo": "JP", "Africa/Nairobi": "KE",
+  "Asia/Bishkek": "KG", "Asia/Phnom_Penh": "KH", "Pacific/Tarawa": "KI", "Pacific/Kanton": "KI",
+  "Pacific/Kiritimati": "KI", "Indian/Comoro": "KM", "America/St_Kitts": "KN", "Asia/Pyongyang": "KP",
+  "Asia/Seoul": "KR", "Asia/Kuwait": "KW", "America/Cayman": "KY", "Asia/Almaty": "KZ",
+  "Asia/Qyzylorda": "KZ", "Asia/Qostanay": "KZ", "Asia/Aqtobe": "KZ", "Asia/Aqtau": "KZ",
+  "Asia/Atyrau": "KZ", "Asia/Oral": "KZ", "Asia/Vientiane": "LA", "Asia/Beirut": "LB",
+  "America/St_Lucia": "LC", "Europe/Vaduz": "LI", "Asia/Colombo": "LK", "Africa/Monrovia": "LR",
+  "Africa/Maseru": "LS", "Europe/Vilnius": "LT", "Europe/Luxembourg": "LU", "Europe/Riga": "LV",
+  "Africa/Tripoli": "LY", "Africa/Casablanca": "MA", "Europe/Monaco": "MC", "Europe/Chisinau": "MD",
+  "Europe/Podgorica": "ME", "America/Marigot": "MF", "Indian/Antananarivo": "MG", "Pacific/Majuro": "MH",
+  "Pacific/Kwajalein": "MH", "Europe/Skopje": "MK", "Africa/Bamako": "ML", "Asia/Yangon": "MM",
+  "Asia/Ulaanbaatar": "MN", "Asia/Hovd": "MN", "Asia/Macau": "MO", "Pacific/Saipan": "MP",
+  "America/Martinique": "MQ", "Africa/Nouakchott": "MR", "America/Montserrat": "MS", "Europe/Malta": "MT",
+  "Indian/Mauritius": "MU", "Indian/Maldives": "MV", "Africa/Blantyre": "MW", "America/Mexico_City": "MX",
+  "America/Cancun": "MX", "America/Merida": "MX", "America/Monterrey": "MX", "America/Matamoros": "MX",
+  "America/Chihuahua": "MX", "America/Ciudad_Juarez": "MX", "America/Ojinaga": "MX", "America/Mazatlan": "MX",
+  "America/Bahia_Banderas": "MX", "America/Hermosillo": "MX", "America/Tijuana": "MX", "Asia/Kuala_Lumpur": "MY",
+  "Asia/Kuching": "MY", "Africa/Maputo": "MZ", "Africa/Windhoek": "NA", "Pacific/Noumea": "NC",
+  "Africa/Niamey": "NE", "Pacific/Norfolk": "NF", "Africa/Lagos": "NG", "America/Managua": "NI",
+  "Europe/Amsterdam": "NL", "Europe/Oslo": "NO", "Asia/Kathmandu": "NP", "Pacific/Nauru": "NR",
+  "Pacific/Niue": "NU", "Pacific/Auckland": "NZ", "Pacific/Chatham": "NZ", "Asia/Muscat": "OM",
+  "America/Panama": "PA", "America/Lima": "PE", "Pacific/Tahiti": "PF", "Pacific/Marquesas": "PF",
+  "Pacific/Gambier": "PF", "Pacific/Port_Moresby": "PG", "Pacific/Bougainville": "PG", "Asia/Manila": "PH",
+  "Asia/Karachi": "PK", "Europe/Warsaw": "PL", "America/Miquelon": "PM", "Pacific/Pitcairn": "PN",
+  "America/Puerto_Rico": "PR", "Asia/Gaza": "PS", "Asia/Hebron": "PS", "Europe/Lisbon": "PT",
+  "Atlantic/Madeira": "PT", "Atlantic/Azores": "PT", "Pacific/Palau": "PW", "America/Asuncion": "PY",
+  "Asia/Qatar": "QA", "Indian/Reunion": "RE", "Europe/Bucharest": "RO", "Europe/Belgrade": "RS",
+  "Europe/Kaliningrad": "RU", "Europe/Moscow": "RU", "Europe/Simferopol": "UA", "Europe/Kirov": "RU",
+  "Europe/Volgograd": "RU", "Europe/Astrakhan": "RU", "Europe/Saratov": "RU", "Europe/Ulyanovsk": "RU",
+  "Europe/Samara": "RU", "Asia/Yekaterinburg": "RU", "Asia/Omsk": "RU", "Asia/Novosibirsk": "RU",
+  "Asia/Barnaul": "RU", "Asia/Tomsk": "RU", "Asia/Novokuznetsk": "RU", "Asia/Krasnoyarsk": "RU",
+  "Asia/Irkutsk": "RU", "Asia/Chita": "RU", "Asia/Yakutsk": "RU", "Asia/Khandyga": "RU",
+  "Asia/Vladivostok": "RU", "Asia/Ust-Nera": "RU", "Asia/Magadan": "RU", "Asia/Sakhalin": "RU",
+  "Asia/Srednekolymsk": "RU", "Asia/Kamchatka": "RU", "Asia/Anadyr": "RU", "Africa/Kigali": "RW",
+  "Asia/Riyadh": "SA", "Pacific/Guadalcanal": "SB", "Indian/Mahe": "SC", "Africa/Khartoum": "SD",
+  "Europe/Stockholm": "SE", "Asia/Singapore": "SG", "Atlantic/St_Helena": "SH", "Europe/Ljubljana": "SI",
+  "Arctic/Longyearbyen": "SJ", "Europe/Bratislava": "SK", "Africa/Freetown": "SL", "Europe/San_Marino": "SM",
+  "Africa/Dakar": "SN", "Africa/Mogadishu": "SO", "America/Paramaribo": "SR", "Africa/Juba": "SS",
+  "Africa/Sao_Tome": "ST", "America/El_Salvador": "SV", "America/Lower_Princes": "SX", "Asia/Damascus": "SY",
+  "Africa/Mbabane": "SZ", "America/Grand_Turk": "TC", "Africa/Ndjamena": "TD", "Indian/Kerguelen": "TF",
+  "Africa/Lome": "TG", "Asia/Bangkok": "TH", "Asia/Dushanbe": "TJ", "Pacific/Fakaofo": "TK",
+  "Asia/Dili": "TL", "Asia/Ashgabat": "TM", "Africa/Tunis": "TN", "Pacific/Tongatapu": "TO",
+  "Europe/Istanbul": "TR", "America/Port_of_Spain": "TT", "Pacific/Funafuti": "TV", "Asia/Taipei": "TW",
+  "Africa/Dar_es_Salaam": "TZ", "Europe/Kyiv": "UA", "Africa/Kampala": "UG", "Pacific/Midway": "UM",
+  "Pacific/Wake": "UM", "America/New_York": "US", "America/Detroit": "US", "America/Kentucky/Louisville": "US",
+  "America/Kentucky/Monticello": "US", "America/Indiana/Indianapolis": "US", "America/Indiana/Vincennes": "US",
+  "America/Indiana/Winamac": "US", "America/Indiana/Marengo": "US", "America/Indiana/Petersburg": "US",
+  "America/Indiana/Vevay": "US", "America/Chicago": "US", "America/Indiana/Tell_City": "US",
+  "America/Indiana/Knox": "US", "America/Menominee": "US", "America/North_Dakota/Center": "US",
+  "America/North_Dakota/New_Salem": "US", "America/North_Dakota/Beulah": "US", "America/Denver": "US",
+  "America/Boise": "US", "America/Phoenix": "US", "America/Los_Angeles": "US", "America/Anchorage": "US",
+  "America/Juneau": "US", "America/Sitka": "US", "America/Metlakatla": "US", "America/Yakutat": "US",
+  "America/Nome": "US", "America/Adak": "US", "Pacific/Honolulu": "US", "America/Montevideo": "UY",
+  "Asia/Samarkand": "UZ", "Asia/Tashkent": "UZ", "Europe/Vatican": "VA", "America/St_Vincent": "VC",
+  "America/Caracas": "VE", "America/Tortola": "VG", "America/St_Thomas": "VI", "Asia/Ho_Chi_Minh": "VN",
+  "Pacific/Efate": "VU", "Pacific/Wallis": "WF", "Pacific/Apia": "WS", "Asia/Aden": "YE",
+  "Indian/Mayotte": "YT", "Africa/Johannesburg": "ZA", "Africa/Lusaka": "ZM", "Africa/Harare": "ZW",
+  "Asia/Calcutta": "IN", "Europe/Kiev": "UA"
+};
+
 // Saves the region shared by Discover, Upcoming conferences and the opportunity-type pages.
-async function saveRegion(picker,after){
- const previous=discoveryCountry;picker.disabled=true;
- const existing=entries.find(r=>r.id==='discovery-region'&&r.kind==='preference');
- try{
-   const response=await fetch('/api/entries',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'discovery-region',kind:'preference',revision:existing?.revision||0,data:{title:picker.value}})});
-   if(!response.ok)throw Error();const saved=await response.json();
-   entries=entries.filter(r=>r.id!==saved.id).concat(saved);discoveryCountry=saved.data.title;after();
- }catch{picker.value=previous;notify('Country could not be saved. Refresh and try again.')}finally{picker.disabled=false}
+async function saveRegion(picker, after) {
+  const previous = discoveryCountry;
+  picker.disabled = true;
+  const existing = entries.find(r => r.id === 'discovery-region' && r.kind === 'preference');
+  try {
+    const response = await fetch('/api/entries', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'discovery-region', kind: 'preference', revision: existing?.revision || 0, data: { title: picker.value } })
+    });
+    if (!response.ok) throw Error();
+    const saved = await response.json();
+    entries = entries.filter(r => r.id !== saved.id).concat(saved);
+    discoveryCountry = saved.data.title;
+    after();
+  } catch {
+    picker.value = previous;
+    notify('Country could not be saved. Refresh and try again.');
+  } finally {
+    picker.disabled = false;
+  }
 }
-function initialiseCountry(saved,hint){
- const zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
- const suggested=hint||zoneCountries[zone];
- discoveryCountry=saved.find(r=>r.kind==='preference'&&r.id==='discovery-region')?.data.title || (suggested in countryNames?suggested:regions.MiddleEast.split(' ').includes(suggested)?'MiddleEast':'Global');
+
+// Saves the active career persona preference to the private workspace.
+async function savePersona(picker, after) {
+  const previous = discoveryPersona;
+  picker.disabled = true;
+  const existing = entries.find(r => r.id === 'discovery-persona' && r.kind === 'preference');
+  try {
+    const response = await fetch('/api/entries', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'discovery-persona', kind: 'preference', revision: existing?.revision || 0, data: { title: picker.value } })
+    });
+    if (!response.ok) throw Error();
+    const saved = await response.json();
+    entries = entries.filter(r => r.id !== saved.id).concat(saved);
+    discoveryPersona = saved.data.title;
+    after();
+  } catch {
+    picker.value = previous;
+    notify('Profile could not be saved. Refresh and try again.');
+  } finally {
+    picker.disabled = false;
+  }
 }
-function showDiscovery(){
- $('view').innerHTML='<section class="intro"><h1>Upcoming opportunities</h1><p>Discover events, find an application route and save opportunities to your private tracker.</p></section><section class="panel"><div class="filters"><label>Country or region<select id="region">'+Object.entries(countryNames).map(([v,n])=>'<option value="'+v+'" '+(v===discoveryCountry?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Type<select id="dtype"><option value="">All types</option>'+options(categories,discoveryType)+'</select></label><label class="search">Search<input type="search" id="dsearch" placeholder="Event, city or topic" value="'+esc(discoverySearch)+'"></label></div></section><p class="result-count" id="dcount"></p><div class="cards" id="dcards"></div>';
- $('region').onchange=e=>saveRegion(e.target,renderDiscoveryCards);
- $('dtype').onchange=e=>{discoveryType=e.target.value;renderDiscoveryCards()};
- $('dsearch').oninput=e=>{discoverySearch=e.target.value;renderDiscoveryCards()};
- renderDiscoveryCards();
+
+function initialiseCountry(saved, hint) {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const suggested = hint || zoneCountries[zone];
+  discoveryCountry = saved.find(r => r.kind === 'preference' && r.id === 'discovery-region')?.data.title
+    || (suggested in countryNames ? suggested : regions.MiddleEast.split(' ').includes(suggested) ? 'MiddleEast' : 'Global');
+
+  const savedPersona = saved.find(r => r.kind === 'preference' && r.id === 'discovery-persona')?.data.title;
+  discoveryPersona = savedPersona && savedPersona in PERSONA_LABELS ? savedPersona : 'all';
 }
-let lastOrganiserVisit=null;
-function renderDiscoveryCards(){
- if(!$('dcards'))return;
- const today=londonToday();
- const matches=catalogue.filter(d=>d.end>=today&&matchesLocation(discoveryCountry,d.country)&&(!discoveryType||d.category===discoveryType)&&[d.title,d.category,d.venue,d.fit].join(' ').toLowerCase().includes(discoverySearch.toLowerCase())).sort((a,b)=>a.start.localeCompare(b.start));
- $('dcount').textContent=matches.length+' upcoming ('+matches.filter(d=>d.country!=='Global').length+' location-specific) · Organiser listings checked 18 Nov 2026 · Worldwide online events included';
- $('dcards').innerHTML=matches.map(d=>{
- const existing=entries.find(r=>r.kind==='opportunity'&&r.id===d.id);
- const canSubmit=!existing||['Watching','Drafting'].includes(existing.data.status);
- const submissionAction=canSubmit?'<button class="secondary" data-submit-event="'+d.id+'">Mark as submitted</button>':'';
- return '<article class="card"><p class="eyebrow">'+esc(d.category)+'</p><h2>'+esc(d.title)+'</h2><p>'+date(d.start)+(d.end!==d.start?' – '+date(d.end):'')+' · '+esc(d.venue)+'</p><p>'+esc(d.fit)+'</p>'+(d.deadline?'<p>Deadline '+date(d.deadline)+'</p>':'')+(existing?badge(existing.data.status):'')+(canSubmit&&lastOrganiserVisit===d.id?'<p>Completed the organiser’s form? Record your submission here.</p>':'')+'<div class="actions"><a data-organiser="'+d.id+'" class="secondary" target="_blank" rel="noopener" href="'+esc(d.source)+'">'+esc(d.deadline&&d.deadline<today?'Organiser details':d.action)+' ↗</a>'+submissionAction+'<button class="quiet" data-discover="'+d.id+'">'+(existing?'Open tracked record':'Track opportunity')+'</button></div></article>';
- }).join('')||'<p class="empty">No verified listings match this selection. Try another type or country.</p>';
+
+function showDiscovery() {
+  $('view').innerHTML =
+    '<section class="intro"><h1>Upcoming opportunities</h1><p>Discover role-matched openings alongside universal tech talks, hackathons and events, and track them in your private workspace.</p></section>' +
+    '<section class="panel"><div class="filters">' +
+    '<label>Persona or profile<select id="dpersona">' +
+    Object.entries(PERSONA_LABELS).map(([v, n]) => '<option value="' + v + '" ' + (v === discoveryPersona ? 'selected' : '') + '>' + esc(n) + '</option>').join('') +
+    '</select></label>' +
+    '<label>Country or region<select id="region">' +
+    Object.entries(countryNames).map(([v, n]) => '<option value="' + v + '" ' + (v === discoveryCountry ? 'selected' : '') + '>' + n + '</option>').join('') +
+    '</select></label>' +
+    '<label>Type<select id="dtype"><option value="">All types</option>' + options(categories, discoveryType) + '</select></label>' +
+    '<label class="search">Search<input type="search" id="dsearch" placeholder="Event, role, city or topic" value="' + esc(discoverySearch) + '"></label>' +
+    '</div></section>' +
+    '<p class="result-count" id="dcount"></p><div class="cards" id="dcards"></div>';
+
+  $('dpersona').onchange = e => savePersona(e.target, renderDiscoveryCards);
+  $('region').onchange = e => saveRegion(e.target, renderDiscoveryCards);
+  $('dtype').onchange = e => { discoveryType = e.target.value; renderDiscoveryCards(); };
+  $('dsearch').oninput = e => { discoverySearch = e.target.value; renderDiscoveryCards(); };
+  renderDiscoveryCards();
 }
-document.addEventListener('click',e=>{
- const link=e.target.closest('[data-organiser]');
- if(link){lastOrganiserVisit=link.dataset.organiser;return}
- const submissionId=e.target.closest('[data-submit-event]')?.dataset.submitEvent;
- const id=submissionId||e.target.closest('[data-discover]')?.dataset.discover;if(!id)return;
- const existing=entries.find(r=>r.id===id&&r.kind==='opportunity');
- const d=catalogue.find(item=>item.id===id);
- openEditor(existing||{id,revision:0,kind:'opportunity',data:{...d,status:'Watching'}},Boolean(submissionId));
+
+let lastOrganiserVisit = null;
+
+function renderDiscoveryCards() {
+  if (!$('dcards')) return;
+  const today = londonToday();
+  const matches = catalogue
+    .filter(d =>
+      d.end >= today &&
+      matchesPersona(discoveryPersona, d.personas) &&
+      matchesLocation(discoveryCountry, d.country) &&
+      (!discoveryType || d.category === discoveryType) &&
+      [d.title, d.category, d.venue, d.fit, ...(d.personas || [])].join(' ').toLowerCase().includes(discoverySearch.toLowerCase())
+    )
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  $('dcount').textContent =
+    matches.length + ' upcoming (' + matches.filter(d => d.country !== 'Global').length + ' location-specific) · ' +
+    'Profile: ' + (PERSONA_LABELS[discoveryPersona] || PERSONA_LABELS.all) + ' · ' +
+    'Organiser listings checked 18 Nov 2026 · Worldwide online events included';
+
+  $('dcards').innerHTML = matches.map(d => {
+    const existing = entries.find(r => r.kind === 'opportunity' && r.id === d.id);
+    const canSubmit = !existing || ['Watching', 'Drafting'].includes(existing.data.status);
+    const submissionAction = canSubmit ? '<button class="secondary" data-submit-event="' + d.id + '">Mark as submitted</button>' : '';
+    const personaTag = d.personas?.includes('universal')
+      ? 'Universal'
+      : (d.personas || []).map(p => PERSONA_LABELS[p] || p).join(', ');
+
+    return '<article class="card">' +
+      '<p class="eyebrow">' + esc(d.category) + ' · ' + esc(personaTag) + '</p>' +
+      '<h2>' + esc(d.title) + '</h2>' +
+      '<p>' + date(d.start) + (d.end !== d.start ? ' – ' + date(d.end) : '') + ' · ' + esc(d.venue) + '</p>' +
+      '<p>' + esc(d.fit) + '</p>' +
+      (d.deadline ? '<p>Deadline ' + date(d.deadline) + '</p>' : '') +
+      (existing ? badge(existing.data.status) : '') +
+      (canSubmit && lastOrganiserVisit === d.id ? '<p>Completed the organiser’s form? Record your submission here.</p>' : '') +
+      '<div class="actions">' +
+      '<a data-organiser="' + d.id + '" class="secondary" target="_blank" rel="noopener" href="' + esc(d.source) + '">' + esc(d.deadline && d.deadline < today ? 'Organiser details' : d.action) + ' ↗</a>' +
+      submissionAction +
+      '<button class="quiet" data-discover="' + d.id + '">' + (existing ? 'Open tracked record' : 'Track opportunity') + '</button>' +
+      '</div></article>';
+  }).join('') || '<p class="empty">No verified listings match this selection. Try another persona, type or country.</p>';
+}
+
+document.addEventListener('click', e => {
+  const link = e.target.closest('[data-organiser]');
+  if (link) { lastOrganiserVisit = link.dataset.organiser; return; }
+  const submissionId = e.target.closest('[data-submit-event]')?.dataset.submitEvent;
+  const id = submissionId || e.target.closest('[data-discover]')?.dataset.discover;
+  if (!id) return;
+  const existing = entries.find(r => r.id === id && r.kind === 'opportunity');
+  const d = catalogue.find(item => item.id === id);
+  openEditor(existing || { id, revision: 0, kind: 'opportunity', data: { ...d, status: 'Watching' } }, Boolean(submissionId));
 });
 
-window.addEventListener('focus',()=>{if(lastOrganiserVisit&&page==='Discover'&&!$('editor').open)renderDiscoveryCards()});
+window.addEventListener('focus', () => {
+  if (lastOrganiserVisit && page === 'Discover' && !$('editor').open) renderDiscoveryCards();
+});
