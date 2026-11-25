@@ -1,5 +1,9 @@
 {
   "appId": "com.opportunitydesk.app",
   "appName": "Opportunity Desk",
-  "webDir": "dist/client"
+  "webDir": "www",
+  "server": {
+    "url": "https://data-and-ai-opportunities.optimisticrosemary.chatgpt.site",
+    "cleartext": false
+  }
 }
