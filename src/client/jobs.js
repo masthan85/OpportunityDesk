@@ -1,4 +1,5 @@
 const careerViews=['Available jobs','Jobs applied','Career profile'];
+const jobEmployers='Databricks, GitLab and Canonical';
 let jobResults=null, jobFetch=null, failedBoards=[];
 const jobCountryLabels = new Map(Object.values(zoneCountries).map(code => [code, display.of(code)]));
 const jobCountryAliases = new Map([...jobCountryLabels].map(([code, name]) => [name.toLowerCase(), code]));
@@ -34,6 +35,14 @@ function jobCountries(location) {
   return codes;
 }
 
+// A profile term matches when every word in it starts a word in the vacancy, in any order,
+// so "test engineer" matches "Software Engineer in Test" and "Engineering Manager, Testing".
+const roleWords=text=>text.toLowerCase().replace(/\bquality assurance\b/g,'qa').replace(/\bsdet\b/g,'sdet qa test engineer').split(/[^a-z0-9+#]+/).filter(Boolean);
+function roleMatches(term,text){
+  const words=roleWords(text);
+  return roleWords(term).every(part=>words.some(word=>word.startsWith(part)));
+}
+
 function careerProfile(){return entries.find(r=>r.kind==='preference'&&r.id==='career-profile')}
 function jobApplications(){return entries.filter(r=>r.kind==='job')}
 async function saveCareerRecord(record){
@@ -45,7 +54,7 @@ function renderCareer(){
  const profile=careerProfile(), data=profile?.data||{};
  const head='<section class="intro"><h1>'+esc(page)+'</h1></section>';
  if(page==='Career profile'){
-  $('view').innerHTML=head+'<form id="career-form" class="panel card"><p>Enter comma-separated job titles or skills to match against vacancy titles and departments. Preferred locations rank matches within the country you select.</p>'+field('keywords','Job titles or skills',data.keywords||'','text',true)+field('locations','Preferred locations',data.locations||'','text',true)+field('experience','Relevant experience for interview prep',data.experience||'','textarea',true)+'<button class="primary">Save profile</button></form>';
+  $('view').innerHTML=head+'<form id="career-form" class="panel card"><p>Vacancies come from the '+jobEmployers+' job boards. Enter comma-separated job titles or skills to match against vacancy titles and departments. Preferred locations rank matches within the country you select.</p>'+field('keywords','Job titles or skills',data.keywords||'','text',true)+field('locations','Preferred locations',data.locations||'','text',true)+field('experience','Relevant experience for interview prep',data.experience||'','textarea',true)+'<button class="primary">Save profile</button></form>';
   $('career-form').onsubmit=async e=>{e.preventDefault();const f=e.target;f.querySelector('button').disabled=true;try{await saveCareerRecord({id:'career-profile',kind:'preference',revision:profile?.revision||0,data:{title:'Career profile',...Object.fromEntries(new FormData(f))}});navigate('Available jobs')}catch(err){notify(err.message)}finally{f.querySelector('button').disabled=false}};return;
  }
  if(page==='Jobs applied'){
@@ -75,13 +84,13 @@ function renderCareer(){
  const keywords=terms(data.keywords),locations=terms(data.locations);
  const jobs=jobResults
    .filter(job=>jobCountry==='All'||jobCountries(job.location).has(jobCountry))
-   .map(j=>({...j,matched:keywords.filter(k=>(j.title+' '+j.department).toLowerCase().includes(k))}))
+   .map(j=>({...j,matched:keywords.filter(k=>roleMatches(k,j.title+' '+j.department))}))
    .filter(j=>!keywords.length||j.matched.length)
    .sort((a,b)=>b.matched.length-a.matched.length||
      Number(locations.some(l=>b.location.toLowerCase().includes(l)))-Number(locations.some(l=>a.location.toLowerCase().includes(l)))||
      a.title.localeCompare(b.title));
  $('job-summary').textContent=jobs.length+' matching vacancies · '+(jobCountryLabels.get(jobCountry)||'All countries')+(failedBoards.length?' · Unavailable feeds: '+failedBoards.join(', '):'')+(!keywords.length&&!locations.length?' · Add your profile to personalise results.':'');
- $('job-list').innerHTML=jobs.map(j=>'<article class="card"><h2>'+esc(j.title)+'</h2><p>'+esc(j.employer)+' · '+esc(j.location)+'</p>'+(j.matched.length?'<p>Matches '+esc(j.matched.join(', '))+'</p>':'')+'<div class="actions"><a class="secondary" target="_blank" rel="noopener" href="'+esc(safeUrl(j.url))+'">Apply with employer ↗</a>'+interviewButton(j.id)+(entries.some(r=>r.id===j.id)?'<button class="quiet" data-page="Jobs applied">View application</button>':'<button class="quiet" data-job-apply="'+esc(j.id)+'">Mark as applied</button>')+'</div></article>').join('')||'<p class="empty">Try another country, edit your profile or refresh the employer feeds.</p>';
+ $('job-list').innerHTML=jobs.map(j=>'<article class="card"><h2>'+esc(j.title)+'</h2><p>'+esc(j.employer)+' · '+esc(j.location)+'</p>'+(j.matched.length?'<p>Matches '+esc(j.matched.join(', '))+'</p>':'')+'<div class="actions"><a class="secondary" target="_blank" rel="noopener" href="'+esc(safeUrl(j.url))+'">Apply with employer ↗</a>'+interviewButton(j.id)+(entries.some(r=>r.id===j.id)?'<button class="quiet" data-page="Jobs applied">View application</button>':'<button class="quiet" data-job-apply="'+esc(j.id)+'">Mark as applied</button>')+'</div></article>').join('')||'<p class="empty">'+(keywords.length&&jobResults.length?'None of the '+jobResults.length+' technical vacancies from '+jobEmployers+' match '+esc(keywords.join(', '))+(jobCountry==='All'?'':' in '+esc(jobCountryLabels.get(jobCountry)))+'. Try All countries or a broader role, such as engineer.':'Try another country, edit your profile or refresh the employer feeds.')+'</p>';
 }
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-job-apply]');if(!b)return;const job=jobResults.find(j=>j.id===b.dataset.jobApply);if(!job)return;b.disabled=true;try{await saveCareerRecord({id:job.id,kind:'job',revision:0,data:{...job,status:'Applied',applied:londonToday()}});renderCareer();notify('Application recorded')}catch(err){notify(err.message);b.disabled=false}});
 document.addEventListener('change',async e=>{const id=e.target.dataset.jobStatus;if(!id)return;const r=entries.find(v=>v.id===id);const input=e.target;input.disabled=true;try{await saveCareerRecord({...r,data:{...r.data,status:input.value}});notify('Status updated')}catch(err){input.value=r.data.status;notify(err.message)}finally{input.disabled=false}});

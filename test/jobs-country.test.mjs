@@ -9,6 +9,7 @@ const source = ['discovery.js', 'jobs.js'].map(file =>
 const jobs = runInNewContext(source + `
   ({
     countries: location => [...jobCountries(location)],
+    matches: (term, title) => roleMatches(term, title),
     selected: (records, hint) => {
       initialiseJobCountry(records, hint);
       return jobCountry;
@@ -34,4 +35,16 @@ test('defaults to the visitor country and honours saved overrides', () => {
   assert.equal(jobs.selected(saved, 'GB'), 'IN');
   saved[0].data.title = 'All';
   assert.equal(jobs.selected(saved, 'GB'), 'All');
+});
+
+test('matches profile roles regardless of word order or inflection', () => {
+  for (const [term, title, expected] of [
+    ['test engineer', 'Senior Software Engineer in Test', true],
+    ['test engineer', 'Engineering Manager, Testing', true],
+    ['qa engineer', 'Quality Assurance Engineer', true],
+    ['qa engineer', 'SDET', true],
+    ['data architect', 'Solutions Architect, Data Platform', true],
+    ['test engineer', 'Data Engineer', false],
+    ['ai', 'Account Executive', false],
+  ]) assert.equal(jobs.matches(term, title), expected, term + ' / ' + title);
 });

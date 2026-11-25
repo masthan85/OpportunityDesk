@@ -26,7 +26,7 @@ const icons={
   pin:'<path d="m5 14 9-9 5 5-9 9H5zm6-6 5 5m-11 6-2 2"/>'
 };
 const icon=name=>`<span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">${icons[name]}</svg></span>`;
-const groups=[['Workspace',[['Discover','calendar'],['Overview','overview'],['My opportunities','list'],['My submissions','pin'],['Upcoming conferences','clock']]],['Jobs',[['Available jobs','list'],['Jobs applied','file'],['Career profile','people']]],['Opportunity types',categories.map((c,i)=>[c,['calendar','mic','code','award','award','people','people'][i]])],['Resources',[['Templates','file']]]];
+const groups=[['Workspace',[['Discover','calendar'],['Overview','overview'],['My opportunities','list'],['My submissions','pin'],['Jobs applied','file'],['Upcoming conferences','clock']]],['Opportunity types',[['Available jobs','list'],...categories.map((c,i)=>[c,['calendar','mic','code','award','award','people','people'][i]])]],['Resources',[['Career profile','people'],['Templates','file']]]];
 const subtitles={'Overview':'Track opportunities, prepare submissions and record what comes of them.','My opportunities':'Search, review and update your full opportunity register.','My submissions':'Review your submitted applications, registrations and nominations across all opportunity types.','Upcoming conferences':'Browse upcoming conferences in your selected region and conferences in your tracker, ordered by event date.','Templates':'Edit and copy reusable drafts for speaking, mentoring and professional evidence.'};
 const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -36,15 +36,19 @@ const londonToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/London',
 const badge=value=>`<span class="badge ${esc(value?.toLowerCase().replaceAll(' ','-'))}">${esc(value||'Watching')}</span>`;
 const options=(values,selected)=>values.map(v=>`<option ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
 const isSubmission=r=>Boolean(r.data.submitted)||['Submitted','Awaiting decision','Accepted','Declined'].includes(r.data.status);
+// Catalogue listings that are still running in the selected region and not yet tracked.
+function availableListings(){
+  const today=londonToday();
+  const ids=new Set(entries.filter(r=>r.kind==='opportunity').map(r=>r.id));
+  return catalogue.filter(d=>!ids.has(d.id)&&(d.end||d.start)>=today&&matchesLocation(discoveryCountry,d.country))
+    .map(d=>({id:d.id,kind:'opportunity',revision:0,data:{...d,status:'Available'}}));
+}
 function upcomingConferences(){
   const today=londonToday();
   const conference=d=>['Conferences','Calls for speakers'].includes(d.category)||/conference|summit|congress|expo/i.test(d.title);
-  const tracked=entries.filter(r=>r.kind==='opportunity');
-  const ids=new Set(tracked.map(r=>r.id));
-  const listings=catalogue.filter(d=>!ids.has(d.id)&&matchesLocation(discoveryCountry,d.country))
-    .map(d=>({id:d.id,kind:'opportunity',revision:0,data:{...d,status:'Untracked'}}));
-  return [...tracked,...listings].filter(r=>conference(r.data)&&(r.data.end||r.data.start)>=today);
+  return [...entries.filter(r=>r.kind==='opportunity'),...availableListings()].filter(r=>conference(r.data)&&(r.data.end||r.data.start)>=today);
 }
+const showsListings=()=>page==='Upcoming conferences'||categories.includes(page);
 const pendingDecision=r=>['Submitted','Awaiting decision'].includes(r.data.status);
 let entries=[], page='Discover', query='', stage='', topic='', sort='Event date', active=null, ready=false, saving=false, noticeTimer;
 function notify(message){$('notice').textContent=message;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('notice').textContent='',4000)}
@@ -77,7 +81,7 @@ function render(){
   if(page==="Discover"){showDiscovery();return}
   const opportunities=entries.filter(r=>r.kind==='opportunity');
 
-  const intro=`<section class="intro"><div class="eyebrow">OPPORTUNITY TRACKER</div><h1>${page==='Overview'?'Opportunity Desk':esc(page)}</h1><p>${subtitles[page]||'Review opportunities in this category and plan your next action.'}</p></section>`;
+  const intro=`<section class="intro"><div class="eyebrow">OPPORTUNITY TRACKER</div><h1>${page==='Overview'?'Opportunity Desk':esc(page)}</h1><p>${subtitles[page]||esc('Active '+page.toLowerCase()+' in '+(countryNames[discoveryCountry]||'all countries')+', alongside the ones you track. Open an available listing to track it.')}</p></section>`;
   if(page==='Templates'){
     $('view').innerHTML=intro+`<div class="filters"><label class="search"><span class="sr-only">Search templates</span><input id="template-search" type="search" placeholder="Search templates" value="${esc(query)}"></label></div><div id="template-grid" class="cards"></div>`;
     $('template-search').oninput=e=>{query=e.target.value;renderTemplates()};
@@ -87,17 +91,19 @@ function render(){
   const stats=page==='Overview'?`<div class="stats">${stat(opportunities.length,'Tracked opportunities','My opportunities','list')}${stat(upcomingConferences().length,'Upcoming conferences','Upcoming conferences','calendar')}${stat(opportunities.filter(pendingDecision).length,'Awaiting decisions','My opportunities','clock','Decision pending')}${stat(opportunities.filter(isSubmission).length,'My submissions','My submissions','pin')}${stat(jobApplications().length,'Jobs applied','Jobs applied','file')}${stat(templates.length,'Reusable templates','Templates','file')}</div>`:'';
   $('view').innerHTML=intro+stats+`<section class="panel"><div class="section-title"><h2>${page==='Overview'?'Opportunity register':page==='My submissions'?'Submission history':'Records'}</h2></div><div class="filters">
   <label class="search"><span class="sr-only">Search opportunities</span><input id="search" type="search" placeholder="Search opportunities…" value="${esc(query)}"></label>
-  <label><span class="sr-only">Application status</span><select id="stage"><option value="">All statuses</option>${options(['Decision pending',...(page==='Upcoming conferences'?['Untracked']:[]),...statuses],stage)}</select></label>
+  ${showsListings()?`<label><span class="sr-only">Country or region</span><select id="region">${Object.entries(countryNames).map(([v,n])=>`<option value="${esc(v)}" ${v===discoveryCountry?'selected':''}>${esc(n)}</option>`).join('')}</select></label>`:''}
+  <label><span class="sr-only">Application status</span><select id="stage"><option value="">All statuses</option>${options(['Decision pending',...(showsListings()?['Available']:[]),...statuses],stage)}</select></label>
   <label><span class="sr-only">Topic fit</span><select id="topic"><option value="">All topics</option>${options(topics,topic)}</select></label>
   <label><span class="sr-only">Sort opportunities</span><select id="sort">${options(['Event date','Deadline','Follow-up date','Name'],sort)}</select></label></div>
   <div class="table-scroll"><table role="table" aria-label="Opportunity records"><thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Opportunity</th><th role="columnheader" scope="col">Event date / venue</th><th role="columnheader" scope="col">Deadline</th><th role="columnheader" scope="col">Status</th><th role="columnheader" scope="col">Source</th></tr></thead><tbody role="rowgroup" id="rows"></tbody></table></div><div id="count" class="result-count" aria-live="polite"></div></section>${page==='Overview'?`<div class="topics" aria-label="Priority topics">${topics.map(t=>`<button class="topic" data-topic="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}`;
   $('search').oninput=e=>{query=e.target.value;renderRows()};
+  if(showsListings())$('region').onchange=e=>saveRegion(e.target,render);
   for(const [id,update] of [['stage',v=>stage=v],['topic',v=>topic=v],['sort',v=>sort=v]]) $(id).onchange=e=>{update(e.target.value);renderRows()};
   renderRows();
 }
 function renderRows(){
   const needle=query.trim().toLowerCase();
-  const records=page==='Upcoming conferences'?upcomingConferences():entries;
+  const records=page==='Upcoming conferences'?upcomingConferences():categories.includes(page)?[...entries,...availableListings()]:entries;
   const rows=records.filter(r=>{
     if(r.kind!=='opportunity')return false;
     const d=r.data;
@@ -113,7 +119,7 @@ function renderRows(){
     const event=d.start ? date(d.start)+(d.end?' to '+date(d.end):'') : 'To be confirmed';
     const closed=d.deadline&&d.deadline<londonToday();
     return `<tr role="row"><td role="cell" class="record-title"><button class="entry-title" data-edit="${esc(r.id)}">${esc(d.title)}</button><small>${esc([d.organisation,d.category].filter(Boolean).join(' · '))}</small></td><td role="cell"><span class="record-label" aria-hidden="true">Event date / venue</span>${event}<small>${esc(d.venue)}</small></td><td role="cell"><span class="record-label" aria-hidden="true">Deadline</span>${date(d.deadline)||'—'}${closed?'<small>Passed</small>':''}</td><td role="cell"><span class="record-label" aria-hidden="true">Status</span>${badge(d.status)}</td><td role="cell"><span class="record-label" aria-hidden="true">Source</span>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Official ↗</a>`:'—'}</td></tr>`;
-  }).join('')||'<tr role="row"><td role="cell" colspan="5" class="empty">No matching opportunities. Adjust the filters or add a record.</td></tr>';
+  }).join('')||'<tr role="row"><td role="cell" colspan="5" class="empty">'+(showsListings()?'No active listings or tracked records match. Choose another region, adjust the filters or add a record.':'No matching opportunities. Adjust the filters or add a record.')+'</td></tr>';
   $('count').textContent=rows.length+' '+(rows.length===1?'opportunity':'opportunities');
 }
 function renderTemplates(){
@@ -127,7 +133,7 @@ function openEditor(record, submission=false){
   recordingSubmission=submission;
   active=record||{id:crypto.randomUUID(),kind:'opportunity',revision:0,data:{category:categories.includes(page)?page:'Conferences',status:'Watching'}};
   const d=active.data;
-  $('editor-title').textContent=record?record.kind==='template'?'Edit template':'Edit opportunity':'Add opportunity';
+  $('editor-title').textContent=!record?'Add opportunity':record.kind==='template'?'Edit template':entries.some(r=>r.id===record.id)?'Edit opportunity':'Track opportunity';
   $('form-error').textContent='';
   const url=safeUrl(d.source);
   $('fields').innerHTML=active.kind==='template'?field('title','Template name',d.title,'text',true,true)+field('body','Template text',d.body,'template',true,true):
