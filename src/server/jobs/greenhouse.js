@@ -1,5 +1,13 @@
-// Technical and analytical roles across personas: QA/test, software engineering, business analysis, graduate/entry, and data/AI.
+// Technical and persona-aligned roles: QA/test, software engineering, business analysis, graduate/entry, and data/AI.
 const technicalRole = /data|architect|machine learning|artificial intelligence|\bAI\b|\bML\b|analytics|MLOps|platform|engineer|developer|scientist|\bQA\b|quality|\btest|SDET|automation|devops|\bSRE\b|reliability|security|cloud|business analyst|systems analyst|product analyst|graduate|new grad|junior|entry[- ]?level|associate|intern/i;
+
+const VALID_PERSONAS = new Set([
+  'qa_engineer',
+  'software_engineer',
+  'business_analyst',
+  'college_grad',
+  'data_ai'
+]);
 
 function inferPersonas(roleTitle = '', department = '') {
   const text = `${roleTitle} ${department}`.toLowerCase();
@@ -32,9 +40,21 @@ function inferPersonas(roleTitle = '', department = '') {
   return Array.from(personas);
 }
 
-async function employerJobs() {
+async function employerJobs(req) {
   const boards = [['databricks', 'Databricks'], ['gitlab', 'GitLab'], ['canonical', 'Canonical']];
   const failed = [];
+  let requestedPersona = '';
+
+  try {
+    if (req?.url) {
+      const url = new URL(req.url);
+      const p = (url.searchParams.get('persona') || '').trim();
+      if (VALID_PERSONAS.has(p)) requestedPersona = p;
+    }
+  } catch {
+    requestedPersona = '';
+  }
+
   const lists = await Promise.all(boards.map(async ([board, employer]) => {
     try {
       const res = await fetch('https://boards-api.greenhouse.io/v1/boards/' + board + '/jobs', {
@@ -56,13 +76,15 @@ async function employerJobs() {
             personas: inferPersonas(j.title, department),
             url: j.absolute_url
           };
-        });
+        })
+        .filter(job => !requestedPersona || job.personas.includes(requestedPersona));
     } catch {
       failed.push(employer);
       return [];
     }
   }));
-  return json({ jobs: lists.flat(), failed });
+
+  return json({ jobs: lists.flat(), failed, persona: requestedPersona || 'all' });
 }
 
 async function employerJobDescription(path) {

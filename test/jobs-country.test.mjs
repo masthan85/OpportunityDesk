@@ -6,10 +6,12 @@ import { runInNewContext } from 'node:vm';
 const source = ['discovery.js', 'jobs.js'].map(file =>
   readFileSync(new URL('../src/client/' + file, import.meta.url), 'utf8')
 ).join('\n');
+
 const jobs = runInNewContext(source + `
   ({
     countries: location => [...jobCountries(location)],
     matches: (term, title) => roleMatches(term, title),
+    personaMatches: (persona, itemPersonas) => matchesPersona(persona, itemPersonas),
     selected: (records, hint) => {
       initialiseJobCountry(records, hint);
       return jobCountry;
@@ -47,4 +49,13 @@ test('matches profile roles regardless of word order or inflection', () => {
     ['test engineer', 'Data Engineer', false],
     ['ai', 'Account Executive', false],
   ]) assert.equal(jobs.matches(term, title), expected, term + ' / ' + title);
+});
+
+test('filters opportunities by persona while keeping universal events visible', () => {
+  assert.equal(jobs.personaMatches('qa_engineer', ['qa_engineer']), true);
+  assert.equal(jobs.personaMatches('qa_engineer', ['software_engineer']), false);
+  assert.equal(jobs.personaMatches('qa_engineer', ['universal']), true);
+  assert.equal(jobs.personaMatches('business_analyst', ['universal']), true);
+  assert.equal(jobs.personaMatches('college_grad', ['college_grad']), true);
+  assert.equal(jobs.personaMatches('all', ['software_engineer']), true);
 });
