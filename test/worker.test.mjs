@@ -41,7 +41,7 @@ function entryRequest(visitor, revision, title, requestOrigin = origin) {
 
 test('serves the sign-in page and rejects anonymous API requests', async t => {
   const request = workspace(t);
-  assert.match(await (await request('/')).text(), /Sign in with ChatGPT/);
+  assert.match(await (await request('/')).text(), /Open workspace/);
   assert.equal((await request('/api/entries')).status, 401);
   assert.equal((await request('/api/jobs')).status, 401);
   const script = await request('/workspace.js');

@@ -30,6 +30,7 @@ const groups=[['Workspace',[['Discover','calendar'],['Overview','overview'],['My
 const subtitles={'Overview':'Track opportunities, prepare submissions and record what comes of them.','My opportunities':'Search, review and update your full opportunity register.','My submissions':'Review your submitted applications, registrations and nominations across all opportunity types.','Upcoming conferences':'Browse upcoming conferences in your selected region and conferences in your tracker, ordered by event date.','Templates':'Edit and copy reusable drafts for speaking, mentoring and professional evidence.'};
 const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const appApiBase=(typeof window!=='undefined'&&window.OPPORTUNITY_DESK_API_BASE)?String(window.OPPORTUNITY_DESK_API_BASE).replace(/\/+$/,''):'';
 const safeUrl=value=>{try{const url=new URL(value);return ['https:','http:'].includes(url.protocol)?url.href:''}catch{return ''}};
 const date=value=>value ? new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T00:00:00Z')):'';
 const londonToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -55,7 +56,7 @@ function notify(message){$('notice').textContent=message;clearTimeout(noticeTime
 async function load(){
   $('add').disabled=true;
   try{
-    const response=await fetch('/api/entries');
+    const response=await fetch(appApiBase+'/api/entries');
     if(!response.ok) throw Error();
     const {saved, ownerDefault, countryHint}=await response.json();
     if(ownerDefault && !defaults.some(r=>r.id===ownerDefault.id))defaults.push(ownerDefault);
@@ -174,7 +175,7 @@ $('editor-form').onsubmit=async e=>{
   $('save').disabled=true;
   let refresh=false;
   try{
-    const response=await fetch('/api/entries',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...active,data})});
+    const response=await fetch(appApiBase+'/api/entries',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...active,data})});
     const saved=await response.json();
     if(!response.ok){refresh=response.status===409;throw Error(saved.error)}
     entries=[...entries.filter(r=>r.id!==saved.id),saved];
